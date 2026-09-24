@@ -4,18 +4,18 @@
       <view class="home-content">
         <view class="home-heading">
           <text class="header-spacer"></text>
-          <text class="month-label">{{ monthLabel }}</text>
+          <picker mode="date" fields="month" :value="monthPickerValue" @change="onMonthChange"><view class="month-picker"><text class="month-label">{{ monthLabel }}⌄</text></view></picker>
           <text class="header-spacer"></text>
         </view>
         <text class="welcome-text">你好，{{ accountLabel }}</text>
 
         <view class="summary-card">
           <view class="summary-orb"></view>
-          <text class="summary-caption">本月支出</text>
+          <text class="summary-caption">月度支出</text>
           <text class="summary-amount">{{ loading || errorText != '' ? '—' : `¥ ${expenseText}` }}</text>
           <view class="summary-bottom">
-            <view class="summary-column"><text class="summary-caption">本月收入</text><text class="summary-value">{{ loading || errorText != '' ? '—' : `¥ ${incomeText}` }}</text></view>
-            <view class="summary-column"><text class="summary-caption">本月结余</text><text class="summary-value">{{ loading || errorText != '' ? '—' : `¥ ${balanceText}` }}</text></view>
+            <view class="summary-column"><text class="summary-caption">月度收入</text><text class="summary-value">{{ loading || errorText != '' ? '—' : `¥ ${incomeText}` }}</text></view>
+            <view class="summary-column"><text class="summary-caption">月度结余</text><text class="summary-value">{{ loading || errorText != '' ? '—' : `¥ ${balanceText}` }}</text></view>
           </view>
         </view>
 
@@ -38,14 +38,14 @@
           <text class="record-arrow">›</text>
         </view>
 
-        <view class="list-heading"><text class="list-title">{{ showingHistory ? '最近账单' : '本月账单' }}</text><text class="list-count">{{ loading || errorText != '' ? '' : `${bills.length} 笔` }}</text></view>
-        <text v-if="showingHistory && !loading && errorText == ''" class="history-hint">本月暂无账单，以下展示以往记录</text>
+        <view class="list-heading"><text class="list-title">{{ showingHistory ? '最近账单' : `${monthLabel}账单` }}</text><text class="list-count">{{ loading || errorText != '' ? '' : `${bills.length} 笔` }}</text></view>
+        <text v-if="showingHistory && !loading && errorText == ''" class="history-hint">当前月份暂无账单，以下展示以往记录；点顶部月份可查看历史。</text>
         <view v-if="loading" class="state-card"><text class="state-text">正在加载账单…</text></view>
         <view v-else-if="errorText != ''" class="state-card"><text class="state-text">{{ errorText }}</text><text class="retry-link" @tap="refresh">重新加载</text></view>
         <view v-else-if="bills.length == 0" class="state-card">
           <text class="empty-icon">◎</text>
-          <text class="state-title">本月还没有账单</text>
-          <text class="state-text">记下第一笔，收支明细会出现在这里。</text>
+          <text class="state-title">{{ monthLabel }}没有账单</text>
+          <text class="state-text">点顶部月份可以查看其他时间的记录。</text>
         </view>
         <view v-else class="bill-card">
           <view v-for="bill in bills" :key="bill.id" class="bill-row">
@@ -91,7 +91,11 @@ const todos = ref<Array<TodoItem>>([])
 const todoLoading = ref(false)
 const todoError = ref('')
 const accountLabel = ref('朋友')
-const monthLabel = ref('')
+const initialDate = new Date()
+const selectedYear = ref(initialDate.getFullYear())
+const selectedMonth = ref(initialDate.getMonth() + 1)
+const monthPickerValue = computed((): string => `${selectedYear.value}-${twoDigits(selectedMonth.value)}`)
+const monthLabel = computed((): string => `${selectedYear.value}年${selectedMonth.value}月`)
 const todayLabel = ref('')
 const todayDateLabel = ref('')
 const income = ref(0)
@@ -111,6 +115,17 @@ onShow(() => {
 
 function twoDigits(value: number): string { return value < 10 ? `0${value}` : `${value}` }
 function formatAmount(value: number): string { return value.toFixed(2) }
+function onMonthChange(event: UniPickerChangeEvent): void {
+  if (loading.value) return
+  const value = event.detail.value as string
+  if (value.length < 7) return
+  const year = parseInt(value.substring(0, 4))
+  const month = parseInt(value.substring(5, 7))
+  if (year < 2000 || month < 1 || month > 12) return
+  selectedYear.value = year
+  selectedMonth.value = month
+  refresh()
+}
 function openCreateBill(): void { uni.navigateTo({ url: '/src/pages/bill/create' }) }
 function openCreateTodo(): void { uni.navigateTo({ url: '/src/pages/todo/create' }) }
 function todoTime(value: string): string { return value.length >= 16 ? value.substring(11, 16) : '' }
@@ -147,13 +162,12 @@ async function refresh(): Promise<void> {
   errorText.value = ''
   showingHistory.value = false
   const now = new Date()
-  const year = now.getFullYear()
-  const month = now.getMonth() + 1
+  const year = selectedYear.value
+  const month = selectedMonth.value
   const lastDay = new Date(year, month, 0).getDate()
   const weekdays = ['日', '一', '二', '三', '四', '五', '六']
-  monthLabel.value = `${year}年${month}月`
   todayLabel.value = `今天，周${weekdays[now.getDay()]}`
-  todayDateLabel.value = `${month}月${now.getDate()}日`
+  todayDateLabel.value = `${now.getMonth() + 1}月${now.getDate()}日`
   const startTime = `${year}-${twoDigits(month)}-01T00:00:00`
   const endTime = `${year}-${twoDigits(month)}-${twoDigits(lastDay)}T23:59:59`
   loadTodos()
@@ -161,7 +175,7 @@ async function refresh(): Promise<void> {
     const response = await http.Post<BillListResponse>('/bill/list', { startTime, endTime, page: -1 })
     if (response.code != 1) throw new Error(response.msg ?? '账单加载失败')
     bills.value = response.data ?? []
-    if (bills.value.length == 0) {
+    if (bills.value.length == 0 && year == now.getFullYear() && month == now.getMonth() + 1) {
       const history = await http.Post<BillListResponse>('/bill/list', { page: 0, size: 10 })
       if (history.code != 1) throw new Error(history.msg ?? '历史账单加载失败')
       bills.value = history.data ?? []
@@ -195,6 +209,7 @@ async function refresh(): Promise<void> {
 .home-content { padding: 59px 16px 42px; }
 .home-heading { flex-direction: row; align-items: center; justify-content: space-between; margin-bottom: 15px; }
 .header-spacer { width: 44px; }
+.month-picker { min-height: 30px; justify-content: center; }
 .month-label { color: #3f3659; font-size: 14px; font-weight: 700; }
 .welcome-text { color: #6f6484; font-size: 12px; margin-bottom: 12px; }
 .summary-card { position: relative; overflow: hidden; border-radius: 21px; padding: 22px; background-image: linear-gradient(to right, #7650ec, #9772d6); box-shadow: 0 10px 27px rgba(113,77,198,0.22); margin-bottom: 13px; }
