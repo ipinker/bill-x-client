@@ -23,7 +23,7 @@
           <text class="helper-text">还没有{{ isIncome ? '收入' : '支出' }}分类，创建一个即可开始记账。</text>
           <view class="create-category-row">
             <input v-model="newCategoryName" class="category-input" type="text" placeholder="例如：餐饮" />
-            <text class="create-category-button" @tap="createCategory">创建分类</text>
+            <button class="create-category-button" :disabled="saving" @tap="createCategory">创建分类</button>
           </view>
         </view>
 
@@ -101,7 +101,7 @@ async function createCategory(): Promise<void> {
   saving.value = true
   errorText.value = ''
   try {
-    const response = await http.Post<ApiResponse<boolean>>('/bill/type/add', { label, isIncome: isIncome.value ? 1 : 0, isShow: 1, pid: 0 })
+    const response = await http.Post<ApiResponse<boolean>>('/bill/type/add', { label, isIncome: isIncome.value ? 1 : 0, isShow: 1 })
     if (response.code != 1) throw new Error(response.msg ?? '分类创建失败')
     newCategoryName.value = ''
     await loadCategories()
@@ -144,7 +144,7 @@ async function submit(): Promise<void> {
       methodId: 0,
       ledgerId: 0,
       dateStr: date.replace(/-/g, '/'),
-      spendTime: `${date}T${time}`,
+      spendTime: `${date} ${time}`,
       remark: remark.value.trim(),
     })
     if (response.code != 1) throw new Error(response.msg ?? '账单保存失败')
@@ -178,9 +178,9 @@ async function submit(): Promise<void> {
 .category-name-selected { color: #6642c4; font-weight: 700; }
 .category-empty { margin-bottom: 10px; }
 .helper-text { color: #91879f; font-size: 12px; line-height: 19px; }
-.create-category-row { flex-direction: row; align-items: center; margin-top: 10px; }
-.category-input { flex: 1; height: 42px; background-color: #f7f5fb; border-radius: 10px; padding: 0 12px; font-size: 13px; }
-.create-category-button { color: #6c49c9; font-size: 12px; font-weight: 700; margin-left: 12px; }
+.create-category-row { margin-top: 10px; }
+.category-input { height: 42px; background-color: #f7f5fb; border-radius: 10px; padding: 0 12px; font-size: 13px; }
+.create-category-button { height: 40px; line-height: 40px; margin-top: 10px; border-radius: 10px; background-color: #eee8ff; color: #6c49c9; font-size: 12px; font-weight: 700; }
 .field-title { margin-top: 17px; }
 .field-input { height: 43px; background-color: #f7f5fb; border-radius: 11px; padding: 0 13px; color: #342b47; font-size: 14px; }
 .error-text { color: #d44869; font-size: 12px; margin-top: 13px; }

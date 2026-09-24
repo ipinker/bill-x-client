@@ -38,7 +38,7 @@ async function submit(): Promise<void> {
   saving.value = true
   errorText.value = ''
   try {
-    const response = await http.Post<ApiResponse>('/todo/add', { title: value, note: note.value.trim(), dueTime: `${date}T${time.value}:00` })
+    const response = await http.Post<ApiResponse>('/todo/add', { title: value, note: note.value.trim(), dueTime: `${date} ${time.value}:00` })
     if (response.code != 1) throw new Error(response.msg ?? '待办保存失败')
     uni.showToast({ title: '待办已添加', icon: 'none' })
     uni.navigateBack()

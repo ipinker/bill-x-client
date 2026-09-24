@@ -168,8 +168,8 @@ async function refresh(): Promise<void> {
   const weekdays = ['日', '一', '二', '三', '四', '五', '六']
   todayLabel.value = `今天，周${weekdays[now.getDay()]}`
   todayDateLabel.value = `${now.getMonth() + 1}月${now.getDate()}日`
-  const startTime = `${year}-${twoDigits(month)}-01T00:00:00`
-  const endTime = `${year}-${twoDigits(month)}-${twoDigits(lastDay)}T23:59:59`
+  const startTime = `${year}-${twoDigits(month)}-01 00:00:00`
+  const endTime = `${year}-${twoDigits(month)}-${twoDigits(lastDay)} 23:59:59`
   loadTodos()
   try {
     const response = await http.Post<BillListResponse>('/bill/list', { startTime, endTime, page: -1 })
