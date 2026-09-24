@@ -1,0 +1,65 @@
+import { http } from '../http'
+import { saveAccountLabel, saveAuthToken } from './session'
+
+type ApiResponse<T> = {
+  code: number
+  data?: T | null
+  msg?: string | null
+}
+
+type LoginData = {
+  token?: string
+}
+
+function checkResponse<T>(response: ApiResponse<T>): T {
+  if (response.code != 1 || response.data == null) {
+    throw new Error(response.msg ?? '请求失败，请重试')
+  }
+  return response.data as T
+}
+
+function saveLogin(response: ApiResponse<LoginData>, account: string): void {
+  const data = checkResponse<LoginData>(response)
+  if (data.token == null || data.token == '') {
+    throw new Error('登录成功但未收到令牌')
+  }
+  saveAuthToken(data.token)
+  saveAccountLabel(account)
+}
+
+export async function loginWithPassword(email: string, password: string): Promise<void> {
+  const response = await http.Post<ApiResponse<LoginData>>('/public/login', {
+    type: 1,
+    username: email,
+    password,
+  })
+  saveLogin(response, email)
+}
+
+export async function loginWithCode(account: string, code: string, isPhone: boolean): Promise<void> {
+  const payload = isPhone
+    ? { type: 3, phone: account, code }
+    : { type: 4, email: account, code }
+  const response = await http.Post<ApiResponse<LoginData>>('/public/login', payload)
+  saveLogin(response, account)
+}
+
+export async function sendAuthCode(account: string, isPhone: boolean): Promise<void> {
+  const path = isPhone ? '/code/sendSmsCode' : '/code/sendMailCode'
+  const payload = isPhone ? { phone: account, length: 6 } : { email: account, length: 6 }
+  const response = await http.Post<ApiResponse<any>>(path, payload)
+  if (response.code != 1) {
+    throw new Error(response.msg ?? '验证码发送失败')
+  }
+}
+
+export async function registerWithCode(account: string, code: string, password: string, isPhone: boolean): Promise<void> {
+  const payload = isPhone
+    ? { type: 3, phone: account, code, password }
+    : { type: 4, email: account, code, password }
+  const response = await http.Post<ApiResponse<any>>('/public/register', payload)
+  if (response.code != 1) {
+    throw new Error(response.msg ?? '注册失败')
+  }
+  await loginWithCode(account, code, isPhone)
+}

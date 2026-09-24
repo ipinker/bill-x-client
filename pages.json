@@ -1,14 +1,41 @@
 {
   "pages": [
     {
+      "path": "src/pages/auth/login",
+      "style": { "navigationStyle": "custom", "navigationBarTitleText": "登录" }
+    },
+    {
+      "path": "src/pages/auth/register",
+      "style": { "navigationStyle": "custom", "navigationBarTitleText": "注册" }
+    },
+    {
       "path": "src/pages/home/index",
       "style": {
         "navigationStyle": "custom",
         "navigationBarTitleText": "首页",
         "pageOrientation": "auto"
       }
+    },
+    {
+      "path": "src/pages/ai/index",
+      "style": { "navigationStyle": "custom", "navigationBarTitleText": "AI" }
+    },
+    {
+      "path": "src/pages/profile/index",
+      "style": { "navigationStyle": "custom", "navigationBarTitleText": "我的" }
     }
   ],
+  "tabBar": {
+    "color": "#8B849B",
+    "selectedColor": "#7050E8",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "black",
+    "list": [
+      { "pagePath": "src/pages/home/index", "text": "首页", "iconPath": "static/tabbar/home.png", "selectedIconPath": "static/tabbar/homeHL.png" },
+      { "pagePath": "src/pages/ai/index", "text": "AI", "iconPath": "static/tabbar/example.png", "selectedIconPath": "static/tabbar/exampleHL.png" },
+      { "pagePath": "src/pages/profile/index", "text": "我的", "iconPath": "static/tabbar/personal.png", "selectedIconPath": "static/tabbar/personalHL.png" }
+    ]
+  },
   "globalStyle": {
     "navigationBarTextStyle": "black",
     "navigationBarTitleText": "uni-app x",

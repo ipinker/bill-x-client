@@ -1,79 +1,148 @@
 <template>
-  <view class="shell-page">
-    <view class="shell-header" @tap="toggleDrawer">
-      <text class="shell-title">XKONG</text>
-      <text class="shell-hint">打开侧边栏</text>
+  <scroll-view class="home-page" direction="vertical" refresher-enabled :refresher-triggered="refreshing" @refresherrefresh="refresh">
+    <view class="home-content">
+      <view class="home-heading">
+        <view>
+          <text class="welcome-text">你好，{{ accountLabel }}</text>
+          <text class="heading-title">清新记账</text>
+        </view>
+        <text class="month-label">{{ monthLabel }}</text>
+      </view>
+      <view class="summary-card">
+        <text class="summary-caption">本月支出</text>
+        <text class="summary-amount">¥ {{ expenseText }}</text>
+        <view class="summary-bottom">
+          <view class="summary-column"><text class="summary-caption">本月收入</text><text class="summary-value">¥ {{ incomeText }}</text></view>
+          <view class="summary-column"><text class="summary-caption">本月结余</text><text class="summary-value">¥ {{ balanceText }}</text></view>
+        </view>
+      </view>
+      <view class="list-heading"><text class="list-title">本月账单</text><text class="list-count">{{ bills.length }} 笔</text></view>
+      <view v-if="loading" class="state-card"><text class="state-text">正在加载账单…</text></view>
+      <view v-else-if="errorText != ''" class="state-card"><text class="state-text">{{ errorText }}</text><text class="retry-link" @tap="refresh">重新加载</text></view>
+      <view v-else-if="bills.length == 0" class="state-card">
+        <text class="empty-icon">◎</text>
+        <text class="state-title">本月还没有账单</text>
+        <text class="state-text">记录第一笔后，这里会展示真实的收支明细。</text>
+      </view>
+      <view v-else class="bill-card">
+        <view v-for="bill in bills" :key="bill.id" class="bill-row">
+          <view class="bill-icon"><text class="bill-icon-text">{{ bill.isIncome == 1 ? '↗' : '↘' }}</text></view>
+          <view class="bill-meta"><text class="bill-name">{{ bill.name ?? '未命名账单' }}</text><text class="bill-date">{{ bill.dateStr ?? bill.createTime ?? '' }}</text></view>
+          <text :class="bill.isIncome == 1 ? 'bill-income' : 'bill-expense'">{{ bill.isIncome == 1 ? '+' : '-' }}¥{{ formatAmount(bill.amount ?? 0) }}</text>
+        </view>
+      </view>
     </view>
-
-    <side-menu-panel
-      :show="drawerVisible"
-      :panel-width="panelWidth"
-      @close="closeDrawer"
-      @profile="noop"
-      @message="noop"
-      @scan="noop"
-      @coupon-center="noop"
-      @dmc-report="noop"
-      @register="noop"
-      @appointment="noop"
-      @assets="noop"
-      @schedule="noop"
-      @health-record="noop"
-      @follow-up="noop"
-      @invite="noop"
-      @vip-center="noop"
-      @ad="noop"
-      @short-video="noop"
-    />
-  </view>
+  </scroll-view>
 </template>
 
 <script setup lang="uts">
+import { onShow } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
-import SideMenuPanel from './components/side-menu-panel.uvue'
+import { http } from '../../http'
+import { getAccountLabel, getAuthToken } from '../../auth/session'
 
-const drawerVisible = ref(true)
-const systemInfo = uni.getSystemInfoSync()
-const panelWidth = computed(() : number => {
-  const width = systemInfo.windowWidth > 0 ? systemInfo.windowWidth - 60 : 330
-  return Math.max(280, width)
+type BillItem = {
+  id?: number
+  name?: string
+  amount?: number
+  isIncome?: number
+  dateStr?: string
+  createTime?: string
+}
+type BillListResponse = {
+  code: number
+  data?: Array<BillItem> | null
+  msg?: string | null
+}
+
+const bills = ref<Array<BillItem>>([])
+const loading = ref(false)
+const refreshing = ref(false)
+const errorText = ref('')
+const accountLabel = ref('朋友')
+const monthLabel = ref('')
+const income = ref(0)
+const expense = ref(0)
+const incomeText = computed((): string => formatAmount(income.value))
+const expenseText = computed((): string => formatAmount(expense.value))
+const balanceText = computed((): string => formatAmount(income.value - expense.value))
+
+onShow(() => {
+  if (getAuthToken() == '') {
+    uni.reLaunch({ url: '/src/pages/auth/login' })
+    return
+  }
+  accountLabel.value = getAccountLabel() == '' ? '朋友' : getAccountLabel()
+  refresh()
 })
 
-function toggleDrawer() : void {
-  drawerVisible.value = !drawerVisible.value
-}
-
-function closeDrawer() : void {
-  drawerVisible.value = false
-}
-
-function noop() : void {
-  // 侧边栏入口在壳项目阶段暂不绑定业务页面。
+function twoDigits(value: number): string { return value < 10 ? `0${value}` : `${value}` }
+function formatAmount(value: number): string { return value.toFixed(2) }
+async function refresh(): Promise<void> {
+  if (loading.value) return
+  loading.value = true
+  refreshing.value = true
+  errorText.value = ''
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = now.getMonth() + 1
+  const lastDay = new Date(year, month, 0).getDate()
+  monthLabel.value = `${year}年${month}月`
+  const startTime = `${year}-${twoDigits(month)}-01T00:00:00`
+  const endTime = `${year}-${twoDigits(month)}-${twoDigits(lastDay)}T23:59:59`
+  try {
+    const response = await http.Post<BillListResponse>('/bill/list', { startTime, endTime, page: -1 })
+    if (response.code != 1) throw new Error(response.msg ?? '账单加载失败')
+    bills.value = response.data ?? []
+    let nextIncome = 0
+    let nextExpense = 0
+    for (const bill of bills.value) {
+      const amount = bill.amount ?? 0
+      if (bill.isIncome == 1) nextIncome += amount
+      else nextExpense += amount
+    }
+    income.value = nextIncome
+    expense.value = nextExpense
+  } catch (error) {
+    bills.value = []
+    income.value = 0
+    expense.value = 0
+    errorText.value = error instanceof Error ? error.message : '账单加载失败'
+  } finally {
+    loading.value = false
+    refreshing.value = false
+  }
 }
 </script>
 
 <style>
-.shell-page {
-  flex: 1;
-  background-color: #f7fafc;
-}
-
-.shell-header {
-  height: 96px;
-  padding: 0 24px;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.shell-title {
-  color: #17212b;
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.shell-hint {
-  color: #64748b;
-  font-size: 13px;
-}
+.home-page { flex: 1; background-color: #f8f6fc; }
+.home-content { padding: 64px 16px 34px; }
+.home-heading { flex-direction: row; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+.welcome-text { color: #8b849b; font-size: 13px; margin-bottom: 4px; }
+.heading-title { color: #261d42; font-size: 25px; font-weight: 800; }
+.month-label { color: #7050e8; font-size: 12px; font-weight: 700; background-color: #eee8ff; border-radius: 12px; padding: 8px 10px; }
+.summary-card { border-radius: 22px; padding: 22px; background-color: #7050e8; margin-bottom: 28px; }
+.summary-caption { color: #ddd0ff; font-size: 12px; }
+.summary-amount { color: #ffffff; font-size: 36px; font-weight: 800; margin-top: 8px; margin-bottom: 22px; }
+.summary-bottom { flex-direction: row; }
+.summary-column { flex: 1; }
+.summary-value { color: #ffffff; font-size: 15px; font-weight: 700; margin-top: 5px; }
+.list-heading { flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.list-title { color: #261d42; font-size: 17px; font-weight: 800; }
+.list-count { color: #8b849b; font-size: 12px; }
+.state-card { padding: 42px 20px; align-items: center; background-color: #ffffff; border-radius: 18px; }
+.state-title { color: #261d42; font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+.state-text { color: #8b849b; font-size: 13px; text-align: center; line-height: 20px; }
+.empty-icon { color: #a78bfa; font-size: 40px; margin-bottom: 12px; }
+.retry-link { color: #7050e8; font-size: 13px; font-weight: 700; margin-top: 14px; }
+.bill-card { border-radius: 18px; background-color: #ffffff; padding: 0 16px; }
+.bill-row { min-height: 68px; flex-direction: row; align-items: center; border-bottom-width: 1px; border-bottom-color: #f1edf6; }
+.bill-icon { width: 38px; height: 38px; border-radius: 12px; background-color: #eee8ff; align-items: center; justify-content: center; margin-right: 12px; }
+.bill-icon-text { color: #7050e8; font-size: 20px; font-weight: 700; }
+.bill-meta { flex: 1; }
+.bill-name { color: #261d42; font-size: 14px; font-weight: 700; }
+.bill-date { color: #9b95a9; font-size: 11px; margin-top: 3px; }
+.bill-income { color: #2fae80; font-size: 14px; font-weight: 700; }
+.bill-expense { color: #261d42; font-size: 14px; font-weight: 700; }
 </style>

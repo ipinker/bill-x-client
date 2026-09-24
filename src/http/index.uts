@@ -1,8 +1,12 @@
 import { REQUEST_SERVER_BASE_URL } from '../constants'
 import type { HttpRequestConfig } from './request/types'
+import { clearAuthToken, getAuthToken } from '../auth/session'
 
 function resolveUrl(path: string, config: HttpRequestConfig): string {
   const baseUrl = config.baseURL ?? REQUEST_SERVER_BASE_URL
+  if (baseUrl.endsWith('/api') && path.startsWith('/api/')) {
+    return `${baseUrl}${path.substring(4)}`
+  }
   if (baseUrl.endsWith('/') && path.startsWith('/')) {
     return `${baseUrl}${path.substring(1)}`
   }
@@ -12,18 +16,36 @@ function resolveUrl(path: string, config: HttpRequestConfig): string {
   return `${baseUrl}${path}`
 }
 
+function requestHeaders(path: string, config: HttpRequestConfig): UTSJSONObject {
+  const header = config.header ?? ({} as UTSJSONObject)
+  const isPublic = path.startsWith('/public/') || path.startsWith('/api/public/')
+    || path.startsWith('/code/') || path.startsWith('/api/code/')
+  const token = getAuthToken()
+  if (!isPublic && token != '') {
+    header['authorization'] = `Bearer ${token}`
+  }
+  return header
+}
+
+function handleUnauthorized(path: string, statusCode: number): void {
+  if (statusCode != 401 || path.startsWith('/public/') || path.startsWith('/api/public/')) return
+  clearAuthToken()
+  uni.reLaunch({ url: '/src/pages/auth/login' })
+}
+
 function request<T>(path: string, method: string, data: any | null, config: HttpRequestConfig = {}): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     uni.request({
       url: resolveUrl(path, config),
       method,
       data,
-      header: config.header ?? ({} as UTSJSONObject),
+      header: requestHeaders(path, config),
       success: response => {
         if (response.statusCode >= 200 && response.statusCode < 300) {
           resolve(response.data as T)
           return
         }
+        handleUnauthorized(path, response.statusCode)
         reject(new Error(`HTTP ${response.statusCode}`))
       },
       fail: error => reject(error),
@@ -44,7 +66,7 @@ function upload<T>(path: string, config: HttpRequestConfig = {}): Promise<T> {
       filePath: config.filePath as string,
       name: config.name ?? 'file',
       formData: config.formData ?? ({} as UTSJSONObject),
-      header: config.header ?? ({} as UTSJSONObject),
+      header: requestHeaders(path, config),
       success: response => {
         if (response.statusCode >= 200 && response.statusCode < 300) {
           try {
@@ -55,6 +77,7 @@ function upload<T>(path: string, config: HttpRequestConfig = {}): Promise<T> {
           }
           return
         }
+        handleUnauthorized(path, response.statusCode)
         reject(new Error(`HTTP ${response.statusCode}`))
       },
       fail: error => reject(error),

@@ -1,0 +1,26 @@
+<template>
+  <view class="ai-page">
+    <text class="ai-title">AI</text>
+    <view class="ai-card">
+      <text class="ai-card-title">智能账本助手</text>
+      <text class="ai-card-text">首页与我的链路完成后，这里将接入账单分析能力。</text>
+    </view>
+  </view>
+</template>
+
+<script setup lang="uts">
+import { onShow } from '@dcloudio/uni-app'
+import { getAuthToken } from '../../auth/session'
+
+onShow(() => {
+  if (getAuthToken() == '') uni.reLaunch({ url: '/src/pages/auth/login' })
+})
+</script>
+
+<style>
+.ai-page { flex: 1; padding: 66px 20px 28px; background-color: #f8f6fc; }
+.ai-title { color: #261d42; font-size: 26px; font-weight: 800; margin-bottom: 25px; }
+.ai-card { padding: 24px; border-radius: 20px; background-color: #ffffff; }
+.ai-card-title { color: #261d42; font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+.ai-card-text { color: #8b849b; font-size: 13px; line-height: 20px; }
+</style>

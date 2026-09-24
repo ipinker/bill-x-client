@@ -1,0 +1,38 @@
+<template>
+  <view class="profile-page">
+    <text class="profile-title">我的</text>
+    <view class="account-card">
+      <text class="account-caption">当前账户</text>
+      <text class="account-name">{{ account }}</text>
+    </view>
+    <button class="logout-button" @tap="logout">退出登录</button>
+  </view>
+</template>
+
+<script setup lang="uts">
+import { onShow } from '@dcloudio/uni-app'
+import { ref } from 'vue'
+import { clearAuthToken, getAccountLabel, getAuthToken } from '../../auth/session'
+
+const account = ref('')
+onShow(() => {
+  if (getAuthToken() == '') {
+    uni.reLaunch({ url: '/src/pages/auth/login' })
+    return
+  }
+  account.value = getAccountLabel()
+})
+function logout(): void {
+  clearAuthToken()
+  uni.reLaunch({ url: '/src/pages/auth/login' })
+}
+</script>
+
+<style>
+.profile-page { flex: 1; padding: 66px 20px 28px; background-color: #f8f6fc; }
+.profile-title { color: #261d42; font-size: 26px; font-weight: 800; margin-bottom: 25px; }
+.account-card { padding: 24px; background-color: #ffffff; border-radius: 20px; margin-bottom: 24px; }
+.account-caption { color: #8b849b; font-size: 12px; margin-bottom: 8px; }
+.account-name { color: #261d42; font-size: 18px; font-weight: 700; }
+.logout-button { width: 100%; height: 48px; line-height: 48px; background-color: #ffffff; color: #db4764; font-size: 15px; border-radius: 14px; }
+</style>

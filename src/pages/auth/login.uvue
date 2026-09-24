@@ -1,0 +1,162 @@
+<template>
+  <scroll-view class="auth-page" direction="vertical">
+    <view class="auth-content">
+      <view class="brand-mark"><text class="brand-letter">L</text></view>
+      <text class="brand-title">清新记账</text>
+      <text class="brand-subtitle">智能记账 · 看见生活的每一笔</text>
+
+      <view class="form-card">
+        <text class="form-title">欢迎回来</text>
+        <text class="form-intro">使用邮箱登录，继续你的记账旅程</text>
+
+        <view class="mode-row">
+          <text :class="mode == 0 ? 'mode-active' : 'mode-idle'" @tap="setMode(0)">密码登录</text>
+          <text :class="mode == 1 ? 'mode-active' : 'mode-idle'" @tap="setMode(1)">验证码登录</text>
+        </view>
+        <view v-if="mode == 1" class="channel-row">
+          <text :class="isPhone ? 'channel-idle' : 'channel-active'" @tap="setPhone(false)">邮箱</text>
+          <text :class="isPhone ? 'channel-active' : 'channel-idle'" @tap="setPhone(true)">手机号</text>
+        </view>
+
+        <text class="field-label">{{ isPhone ? '手机号码' : '邮箱地址' }}</text>
+        <input v-model="account" class="field-input" :type="isPhone ? 'number' : 'text'" :placeholder="isPhone ? '请输入手机号' : '请输入邮箱地址'" />
+        <text class="field-label">{{ mode == 0 ? '密码' : '验证码' }}</text>
+        <view class="code-row">
+          <input v-if="mode == 0" v-model="password" class="field-input field-flex" type="password" placeholder="请输入密码" />
+          <input v-else v-model="code" class="field-input field-flex" type="number" placeholder="请输入验证码" />
+          <text v-if="mode == 1" class="send-code" @tap="sendCode">{{ countdown > 0 ? `${countdown}s` : '获取验证码' }}</text>
+        </view>
+        <text v-if="errorText != ''" class="error-text">{{ errorText }}</text>
+        <button class="primary-button" :disabled="busy" @tap="submit">{{ busy ? '登录中…' : '登录' }}</button>
+        <view class="register-row">
+          <text class="muted-text">还没有账户？</text>
+          <text class="link-text" @tap="openRegister">立即注册</text>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+</template>
+
+<script setup lang="uts">
+import { onShow } from '@dcloudio/uni-app'
+import { onUnmounted, ref } from 'vue'
+import { loginWithCode, loginWithPassword, sendAuthCode } from '../../auth/api'
+import { getAuthToken } from '../../auth/session'
+
+const mode = ref(0)
+const isPhone = ref(false)
+const account = ref('')
+const password = ref('')
+const code = ref('')
+const errorText = ref('')
+const busy = ref(false)
+const countdown = ref(0)
+let countdownTimer: number = -1
+
+onShow(() => {
+  if (getAuthToken() != '') uni.switchTab({ url: '/src/pages/home/index' })
+})
+onUnmounted(() => { if (countdownTimer != -1) clearInterval(countdownTimer) })
+
+function setMode(next: number): void {
+  mode.value = next
+  isPhone.value = false
+  account.value = ''
+  errorText.value = ''
+}
+function setPhone(next: boolean): void {
+  isPhone.value = next
+  account.value = ''
+  errorText.value = ''
+}
+function validAccount(): boolean {
+  const value = account.value.trim()
+  return isPhone.value ? /^1\d{10}$/.test(value) : /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+}
+function startCountdown(): void {
+  countdown.value = 60
+  if (countdownTimer != -1) clearInterval(countdownTimer)
+  countdownTimer = setInterval(() => {
+    countdown.value -= 1
+    if (countdown.value <= 0) {
+      clearInterval(countdownTimer)
+      countdownTimer = -1
+    }
+  }, 1000) as number
+}
+async function sendCode(): Promise<void> {
+  if (busy.value || countdown.value > 0) return
+  if (!validAccount()) {
+    errorText.value = isPhone.value ? '请输入正确的手机号' : '请输入正确的邮箱地址'
+    return
+  }
+  busy.value = true
+  errorText.value = ''
+  try {
+    await sendAuthCode(account.value.trim(), isPhone.value)
+    startCountdown()
+    uni.showToast({ title: '验证码已发送', icon: 'none' })
+  } catch (error) {
+    errorText.value = error instanceof Error ? error.message : '发送失败，请重试'
+  } finally {
+    busy.value = false
+  }
+}
+async function submit(): Promise<void> {
+  if (busy.value) return
+  if (!validAccount()) {
+    errorText.value = isPhone.value ? '请输入正确的手机号' : '请输入正确的邮箱地址'
+    return
+  }
+  if (mode.value == 0 && password.value == '') {
+    errorText.value = '请输入密码'
+    return
+  }
+  if (mode.value == 1 && code.value.trim() == '') {
+    errorText.value = '请输入验证码'
+    return
+  }
+  busy.value = true
+  errorText.value = ''
+  try {
+    if (mode.value == 0) await loginWithPassword(account.value.trim(), password.value)
+    else await loginWithCode(account.value.trim(), code.value.trim(), isPhone.value)
+    uni.switchTab({ url: '/src/pages/home/index' })
+  } catch (error) {
+    errorText.value = error instanceof Error ? error.message : '登录失败，请重试'
+  } finally {
+    busy.value = false
+  }
+}
+function openRegister(): void {
+  uni.navigateTo({ url: '/src/pages/auth/register' })
+}
+</script>
+
+<style>
+.auth-page { flex: 1; background-color: #7350df; }
+.auth-content { padding: 80px 24px 40px; align-items: center; }
+.brand-mark { width: 78px; height: 78px; border-radius: 24px; background-color: #a78bfa; align-items: center; justify-content: center; margin-bottom: 16px; }
+.brand-letter { font-size: 48px; font-weight: 800; color: #ffffff; }
+.brand-title { color: #ffffff; font-size: 27px; font-weight: 800; }
+.brand-subtitle { color: #e5d9ff; font-size: 13px; margin-top: 7px; margin-bottom: 36px; }
+.form-card { width: 100%; padding: 24px; background-color: #ffffff; border-radius: 24px; }
+.form-title { color: #261d42; font-size: 23px; font-weight: 800; }
+.form-intro { color: #8b849b; font-size: 13px; margin-top: 6px; }
+.mode-row { flex-direction: row; margin-top: 28px; margin-bottom: 18px; border-bottom-width: 1px; border-bottom-color: #ece8f6; }
+.mode-active { color: #7050e8; font-size: 15px; font-weight: 700; padding: 0 12px 12px; border-bottom-width: 2px; border-bottom-color: #7050e8; }
+.mode-idle { color: #8b849b; font-size: 15px; padding: 0 12px 12px; }
+.channel-row { flex-direction: row; margin-bottom: 16px; }
+.channel-active { color: #7050e8; font-size: 13px; font-weight: 700; margin-right: 18px; }
+.channel-idle { color: #8b849b; font-size: 13px; margin-right: 18px; }
+.field-label { color: #524968; font-size: 13px; font-weight: 600; margin-bottom: 7px; margin-top: 12px; }
+.field-input { height: 50px; background-color: #f7f5fc; border-radius: 12px; padding: 0 14px; color: #261d42; font-size: 15px; }
+.field-flex { flex: 1; }
+.code-row { flex-direction: row; align-items: center; }
+.send-code { color: #7050e8; font-size: 13px; font-weight: 700; margin-left: 12px; }
+.error-text { color: #db4764; font-size: 12px; margin-top: 12px; }
+.primary-button { margin-top: 26px; width: 100%; height: 50px; line-height: 50px; border-radius: 14px; background-color: #7050e8; color: #ffffff; font-size: 16px; font-weight: 700; }
+.register-row { flex-direction: row; justify-content: center; margin-top: 22px; }
+.muted-text { color: #8b849b; font-size: 13px; }
+.link-text { color: #7050e8; font-size: 13px; font-weight: 700; }
+</style>
