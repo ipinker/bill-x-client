@@ -1,7 +1,7 @@
 <template>
   <view class="home-shell">
     <scroll-view class="home-page" direction="vertical" refresher-enabled :refresher-triggered="refreshing" @refresherrefresh="refresh">
-      <view class="home-content">
+      <view class="home-content" :style="homeTopStyle">
         <view class="home-heading">
           <text class="header-spacer"></text>
           <picker mode="date" fields="month" :value="monthPickerValue" @change="onMonthChange"><view class="month-picker"><text class="month-label">{{ monthLabel }}⌄</text></view></picker>
@@ -50,7 +50,7 @@
         <view v-else class="bill-card">
           <view v-for="bill in bills" :key="bill.id" class="bill-row">
             <view class="bill-icon"><text class="bill-icon-text">{{ bill.isIncome == 1 ? '↗' : '↘' }}</text></view>
-            <view class="bill-meta"><text class="bill-name">{{ bill.name ?? '未命名账单' }}</text><text class="bill-date">{{ bill.dateStr ?? bill.createTime ?? '' }}</text></view>
+            <view class="bill-meta"><text class="bill-name">{{ bill.name != null && bill.name.trim() != '' ? bill.name : '未命名账单' }}</text><text class="bill-date">{{ bill.dateStr ?? bill.createTime ?? '' }}</text></view>
             <text :class="bill.isIncome == 1 ? 'bill-income' : 'bill-expense'">{{ bill.isIncome == 1 ? '+' : '-' }}¥{{ formatAmount(bill.amount ?? 0) }}</text>
           </view>
         </view>
@@ -91,6 +91,7 @@ const todos = ref<Array<TodoItem>>([])
 const todoLoading = ref(false)
 const todoError = ref('')
 const accountLabel = ref('朋友')
+const homeTopStyle = uni.getSystemInfoSync().platform == 'ios' ? 'padding-top: 108px' : 'padding-top: 59px'
 const initialDate = new Date()
 const selectedYear = ref(initialDate.getFullYear())
 const selectedMonth = ref(initialDate.getMonth() + 1)
