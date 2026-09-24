@@ -1,0 +1,870 @@
+<template>
+  <view v-if="rendered" class="side-menu-root">
+    <view
+      :class="panelClass"
+      :style="panelStyle"
+      @touchstart="onTouchStart"
+      @touchmove="onTouchMove"
+      @touchend="onTouchEnd"
+      @touchcancel="onTouchEnd"
+    >
+      <view class="side-menu-statusbar"></view>
+      <view class="side-menu-header">
+        <view class="side-menu-user" @tap="emitProfile">
+          <image class="side-menu-avatar" :src="avatarUrl" mode="aspectFill" />
+          <text class="side-menu-user-name">{{ displayName }}</text>
+          <image class="side-menu-menu-arrow" src="/static/images/side-menu/icon_menu_arrow@3x.png" mode="aspectFit" />
+        </view>
+        <view class="side-menu-header-actions">
+          <view class="side-menu-header-action side-menu-scan-action" @tap="emitScan">
+            <image class="side-menu-header-icon side-menu-scan-icon" src="/static/images/side-menu/icon_scan@3x.png" mode="aspectFit" />
+          </view>
+          <view class="side-menu-header-action side-menu-message-action" @tap="emitMessage">
+            <image class="side-menu-header-icon side-menu-message-icon" src="/static/images/side-menu/icon_message@3x.png" mode="aspectFit" />
+            <view v-if="unreadCount > 0" class="side-menu-badge"></view>
+          </view>
+        </view>
+      </view>
+
+      <scroll-view class="side-menu-scroll" direction="vertical" @touchend="onTouchEnd" @touchcancel="onTouchEnd">
+        <view class="side-menu-content">
+          <view class="side-menu-benefits">
+            <view class="side-menu-benefit-card side-menu-benefit-koko" @tap="emitVipCenter">
+              <text class="side-menu-benefit-title side-menu-benefit-koko-title">KOKO Base</text>
+              <text class="side-menu-benefit-desc side-menu-benefit-koko-desc">你有{{ benefitText }}个权益已送达</text>
+              <image class="side-menu-benefit-arrow" src="/static/images/side-menu/icon_koko_arrow@3x.png" mode="aspectFit" />
+              <image class="side-menu-benefit-art side-menu-benefit-koko-art" src="/static/images/side-menu/img_koko_base@3x.png" mode="aspectFit" />
+            </view>
+            <view class="side-menu-benefit-card side-menu-benefit-coupon" @tap="emitCouponCenter">
+              <text class="side-menu-benefit-title side-menu-benefit-coupon-title">領券中心</text>
+              <text class="side-menu-benefit-desc side-menu-benefit-coupon-desc">限時優惠 即刻領取</text>
+              <image class="side-menu-benefit-arrow" src="/static/images/side-menu/icon_coupon_arrow@3x.png" mode="aspectFit" />
+              <image class="side-menu-benefit-art side-menu-benefit-coupon-art" src="/static/images/side-menu/img_coupon_center@3x.png" mode="aspectFit" />
+            </view>
+          </view>
+
+          <text class="side-menu-section-title">健康管理</text>
+          <view class="side-menu-health-card">
+            <view class="side-menu-health-primary-row">
+              <view class="side-menu-health-primary" @tap="emitHealthRecord">
+                <image class="side-menu-health-primary-icon" src="/static/images/side-menu/icon_health_record@3x.png" mode="aspectFit" />
+                <text class="side-menu-health-primary-title">健康紀錄</text>
+                <text class="side-menu-health-primary-desc">資料與趨勢</text>
+              </view>
+              <view class="side-menu-health-primary" @tap="emitDmcReport">
+                <image class="side-menu-health-primary-icon" src="/static/images/side-menu/icon_dmc_report@3x.png" mode="aspectFit" />
+                <text class="side-menu-health-primary-title">四診報告</text>
+                <text class="side-menu-health-primary-desc">查看報告</text>
+              </view>
+              <view class="side-menu-health-primary" @tap="emitRegister">
+                <image class="side-menu-health-primary-icon" src="/static/images/side-menu/icon_offline_register@3x.png" mode="aspectFit" />
+                <text class="side-menu-health-primary-title">線下掛號</text>
+                <text class="side-menu-health-primary-desc">快速掛號</text>
+              </view>
+            </view>
+            <view class="side-menu-health-divider"></view>
+            <view class="side-menu-health-secondary-row">
+              <view class="side-menu-health-secondary" @tap="emitFollowUp">
+                <image class="side-menu-health-secondary-icon" src="/static/images/side-menu/icon_follow_up@3x.png" mode="aspectFit" />
+                <view class="side-menu-health-secondary-meta">
+                  <text class="side-menu-health-secondary-title">跟進計劃</text>
+                  <text class="side-menu-health-secondary-desc">目標執行</text>
+                </view>
+                <image class="side-menu-mini-arrow" src="/static/images/side-menu/icon_mini_arrow@3x.png" mode="aspectFit" />
+              </view>
+              <view class="side-menu-health-secondary side-menu-health-secondary-last" @tap="emitAppointment">
+                <image class="side-menu-health-secondary-icon" src="/static/images/side-menu/icon_appointment@3x.png" mode="aspectFit" />
+                <view class="side-menu-health-secondary-meta">
+                  <text class="side-menu-health-secondary-title">預約紀錄</text>
+                  <text class="side-menu-health-secondary-desc">查看記錄</text>
+                </view>
+                <image class="side-menu-mini-arrow" src="/static/images/side-menu/icon_mini_arrow@3x.png" mode="aspectFit" />
+              </view>
+            </view>
+          </view>
+
+          <view class="side-menu-menu-list">
+            <view class="side-menu-item" @tap="emitSchedule">
+              <image class="side-menu-item-icon" src="/static/images/side-menu/icon_schedule@3x.png" mode="aspectFit" />
+              <text class="side-menu-item-text">我的日程</text>
+              <image class="side-menu-menu-arrow" src="/static/images/side-menu/icon_menu_arrow@3x.png" mode="aspectFit" />
+            </view>
+            <view class="side-menu-item side-menu-item-second" @tap="emitAssets">
+              <image class="side-menu-item-icon" src="/static/images/side-menu/icon_assets@3x.png" mode="aspectFit" />
+              <text class="side-menu-item-text">我的資產</text>
+              <image class="side-menu-menu-arrow" src="/static/images/side-menu/icon_menu_arrow@3x.png" mode="aspectFit" />
+            </view>
+            <view class="side-menu-item side-menu-item-third" @tap="emitInvite">
+              <image class="side-menu-item-icon" src="/static/images/side-menu/icon_invite@3x.png" mode="aspectFit" />
+              <text class="side-menu-item-text">我的邀請碼</text>
+              <image class="side-menu-menu-arrow" src="/static/images/side-menu/icon_menu_arrow@3x.png" mode="aspectFit" />
+            </view>
+          </view>
+
+          <view class="side-menu-ad" @tap="emitAd">
+            <image v-if="adImageUrl != ''" class="side-menu-ad-image" :src="adImageUrl" mode="aspectFill" />
+            <view v-else class="side-menu-ad-placeholder">
+              <view class="side-menu-ad-copy">
+                <text class="side-menu-ad-title">我是一個廣告</text>
+                <text class="side-menu-ad-desc">會員年卡限時 50%</text>
+              </view>
+              <image class="side-menu-ad-art" src="/static/images/side-menu/img_ad_gift@3x.png" mode="aspectFit" />
+            </view>
+          </view>
+          <view class="side-menu-short-video" @tap="emitShortVideo">
+            <image class="side-menu-short-video-icon" src="/static/images/side-menu/icon_dmc_report@3x.png" mode="aspectFit" />
+            <text class="side-menu-short-video-text">短剧</text>
+            <image class="side-menu-short-video-arrow" src="/static/images/side-menu/icon_menu_arrow@3x.png" mode="aspectFit" />
+          </view>
+          <view class="side-menu-bottom-safe"></view>
+        </view>
+      </scroll-view>
+    </view>
+    <view :class="visible ? 'side-menu-mask side-menu-mask-open' : 'side-menu-mask'" @tap="emitClose"></view>
+  </view>
+</template>
+
+<script setup lang="uts">
+import { computed, ref, watch } from 'vue'
+
+const props = defineProps({
+  show: {
+    type: Boolean,
+    default: false,
+  },
+  panelWidth: {
+    type: Number,
+    default: 280,
+  },
+  displayName: {
+    type: String,
+    default: 'KoKo 用户',
+  },
+  avatarUrl: {
+    type: String,
+    default: '/static/logo.png',
+  },
+  unreadCount: {
+    type: Number,
+    default: 0,
+  },
+  benefitText: {
+    type: String,
+    default: '0',
+  },
+  adImageUrl: {
+    type: String,
+    default: '',
+  },
+})
+
+const SIDE_MENU_TRANSITION_DURATION = 260
+const rendered = ref(false)
+const visible = ref(false)
+const hideTimer = ref<number | null>(null)
+const isDragging = ref(false)
+const dragStartX = ref(0)
+const dragStartY = ref(0)
+const dragOffset = ref(0)
+const isVerticalGesture = ref(false)
+
+const panelStyle = computed(() : UTSJSONObject => {
+  const style = {
+    width: `${Math.max(280, props.panelWidth)}px`,
+  } as UTSJSONObject
+  if (isDragging.value) {
+    style['transform'] = `translateX(${dragOffset.value}px)`
+  }
+  return style
+})
+
+const panelClass = computed(() : string => {
+  const visibleClass = visible.value ? ' side-menu-panel-open' : ''
+  const draggingClass = isDragging.value ? ' side-menu-panel-dragging' : ''
+  return `side-menu-panel${visibleClass}${draggingClass}`
+})
+
+const emit = defineEmits([
+  'close',
+  'profile',
+  'message',
+  'scan',
+  'coupon-center',
+  'dmc-report',
+  'register',
+  'appointment',
+  'assets',
+  'schedule',
+  'health-record',
+  'follow-up',
+   'invite',
+   'vip-center',
+   'ad',
+   'short-video',
+])
+
+function emitClose() : void {
+  emit('close')
+}
+
+function emitProfile() : void {
+  emit('profile')
+}
+
+function emitMessage() : void {
+  emit('message')
+}
+
+function emitScan() : void {
+  emit('scan')
+}
+
+function emitCouponCenter() : void {
+  emit('coupon-center')
+}
+
+function emitDmcReport() : void {
+  emit('dmc-report')
+}
+
+function emitRegister() : void {
+  emit('register')
+}
+
+function emitAppointment() : void {
+  emit('appointment')
+}
+
+function emitAssets() : void {
+  emit('assets')
+}
+
+function emitSchedule() : void {
+  emit('schedule')
+}
+
+function emitHealthRecord() : void {
+  emit('health-record')
+}
+
+function emitFollowUp() : void {
+  emit('follow-up')
+}
+
+function emitInvite() : void {
+  emit('invite')
+}
+
+function emitVipCenter() : void {
+  emit('vip-center')
+}
+
+function emitAd() : void {
+  emit('ad')
+}
+
+function emitShortVideo() : void {
+  emit('short-video')
+}
+
+function getTouchPageX(event : UniTouchEvent) : number | null {
+  if (event.changedTouches.length > 0) {
+    return event.changedTouches[0].pageX
+  }
+  if (event.touches.length > 0) {
+    return event.touches[0].pageX
+  }
+  return null
+}
+
+function getTouchPageY(event : UniTouchEvent) : number | null {
+  if (event.changedTouches.length > 0) {
+    return event.changedTouches[0].pageY
+  }
+  if (event.touches.length > 0) {
+    return event.touches[0].pageY
+  }
+  return null
+}
+
+function onTouchStart(event : UniTouchEvent) : void {
+  const pageX = getTouchPageX(event)
+  const pageY = getTouchPageY(event)
+  if (pageX == null || pageY == null) {
+    return
+  }
+  isDragging.value = false
+  isVerticalGesture.value = false
+  dragStartX.value = pageX
+  dragStartY.value = pageY
+  dragOffset.value = 0
+}
+
+function onTouchMove(event : UniTouchEvent) : void {
+  const pageX = getTouchPageX(event)
+  const pageY = getTouchPageY(event)
+  if (pageX == null || pageY == null) {
+    return
+  }
+  const nextOffset = pageX - dragStartX.value
+  const verticalOffset = pageY - dragStartY.value
+  if (!isDragging.value && !isVerticalGesture.value) {
+    if (Math.abs(nextOffset) < 8 && Math.abs(verticalOffset) < 8) {
+      return
+    }
+    if (nextOffset >= 0 || Math.abs(nextOffset) <= Math.abs(verticalOffset)) {
+      isVerticalGesture.value = true
+      return
+    }
+    isDragging.value = true
+  }
+  if (!isDragging.value) {
+    return
+  }
+  dragOffset.value = Math.min(0, Math.max(-Math.max(280, props.panelWidth), nextOffset))
+}
+
+function onTouchEnd() : void {
+  if (!isDragging.value) {
+    isVerticalGesture.value = false
+    return
+  }
+  const shouldClose = dragOffset.value < -Math.max(280, props.panelWidth) / 2
+  isDragging.value = false
+  isVerticalGesture.value = false
+  dragOffset.value = 0
+  if (shouldClose) {
+    emitClose()
+  }
+}
+
+function clearHideTimer() : void {
+  const timer = hideTimer.value
+  if (timer != null) {
+    clearTimeout(timer)
+    hideTimer.value = null
+  }
+}
+
+function openPanel() : void {
+  clearHideTimer()
+  rendered.value = true
+  setTimeout(() => {
+    visible.value = true
+  }, 20)
+}
+
+function closePanel() : void {
+  if (!rendered.value) {
+    return
+  }
+  visible.value = false
+  clearHideTimer()
+  hideTimer.value = setTimeout(() => {
+    rendered.value = false
+    clearHideTimer()
+  }, SIDE_MENU_TRANSITION_DURATION)
+}
+
+watch(() : boolean => {
+  return props.show
+}, (value : boolean) => {
+  if (value) {
+    openPanel()
+    return
+  }
+  closePanel()
+}, {
+  immediate: true,
+})
+</script>
+
+<style scoped>
+.side-menu-root {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: row;
+  z-index: 400;
+}
+
+.side-menu-mask {
+  flex: 1;
+  background-color: rgba(40, 42, 49, 0.5);
+  opacity: 0;
+  transition-property: opacity;
+  transition-duration: 0.22s;
+  transition-timing-function: ease-out;
+}
+
+.side-menu-mask-open {
+  opacity: 1;
+}
+
+.side-menu-panel {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 401;
+  height: 100%;
+  background-color: #faf9fb;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateX(-100%);
+  transition-property: transform;
+  transition-duration: 0.26s;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.side-menu-panel-open {
+  transform: translateX(0);
+}
+
+.side-menu-panel-dragging {
+  transition-duration: 0s;
+}
+
+.side-menu-statusbar {
+  height: var(--statusbar-height, 0px);
+}
+
+.side-menu-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 15px 8px 11px;
+}
+
+.side-menu-user {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.side-menu-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 21px;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #ffffff;
+  background-color: #ffffff;
+}
+
+.side-menu-user-name {
+  flex: 1;
+  margin-left: 4px;
+  font-family: PingFang SC-Semibold;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 18px;
+  color: #303051;
+}
+
+.side-menu-header-actions {
+  width: 67px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-left: 8px;
+}
+
+.side-menu-header-action {
+  height: 40px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.side-menu-scan-action {
+  width: 16px;
+}
+
+.side-menu-message-action {
+  width: 40px;
+  margin-left: 11px;
+  border-radius: 20px;
+  background-color: rgba(0, 123, 255, 0.05);
+}
+
+.side-menu-header-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.side-menu-scan-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.side-menu-message-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.side-menu-badge {
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  background-color: #ef4444;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.side-menu-scroll {
+  flex: 1;
+}
+
+.side-menu-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.side-menu-benefits {
+  display: flex;
+  flex-direction: row;
+  margin-left: 14px;
+  margin-right: 14px;
+}
+
+.side-menu-benefit-card {
+  flex: 1;
+  height: 168px;
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.side-menu-benefit-koko {
+  margin-right: 8px;
+  box-shadow: 0 14px 26px 0 rgba(181, 167, 234, 0.13);
+  background-image: linear-gradient(to bottom right, rgba(245, 240, 255, 1), rgba(238, 231, 255, 1));
+}
+
+.side-menu-benefit-coupon {
+  box-shadow: 0 14px 26px 0 rgba(235, 197, 150, 0.14);
+  background-image: linear-gradient(to bottom right, rgba(255, 243, 230, 1), rgba(255, 237, 218, 1));
+}
+
+.side-menu-benefit-title {
+  position: absolute;
+  left: 14px;
+  top: 20px;
+  font-family: PingFang HK-Semibold;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.side-menu-benefit-koko-title {
+  color: #5f48ad;
+}
+
+.side-menu-benefit-coupon-title {
+  color: #d5511f;
+}
+
+.side-menu-benefit-desc {
+  position: absolute;
+  left: 14px;
+  top: 46px;
+  font-family: PingFang HK-Medium;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 13px;
+}
+
+.side-menu-benefit-koko-desc {
+  color: #7b719c;
+}
+
+.side-menu-benefit-coupon-desc {
+  color: #8a705e;
+}
+
+.side-menu-benefit-arrow {
+  position: absolute;
+  left: 16px;
+  bottom: 14px;
+  width: 21px;
+  height: 21px;
+}
+
+.side-menu-benefit-art {
+  position: absolute;
+  right: 0;
+  bottom: 8px;
+  width: 84px;
+  height: 84px;
+}
+
+.side-menu-benefit-koko-art {
+  right: 0;
+}
+
+.side-menu-benefit-coupon-art {
+  right: 0;
+}
+
+.side-menu-section-title {
+  margin-left: 17px;
+  margin-top: 24px;
+  margin-bottom: 11px;
+  font-family: PingFang HK-Medium;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 18px;
+  color: #1f2a44;
+}
+
+.side-menu-health-card {
+  height: 208px;
+  margin-left: 14px;
+  margin-right: 14px;
+  border-radius: 10px;
+  box-shadow: 0 12px 28px 0 rgba(218, 224, 239, 0.3);
+  background-color: rgba(255, 255, 255, 0.88);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.side-menu-health-primary-row {
+  height: 135px;
+  display: flex;
+  flex-direction: row;
+}
+
+.side-menu-health-primary {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 17px;
+}
+
+.side-menu-health-primary-icon {
+  width: 58px;
+  height: 58px;
+}
+
+.side-menu-health-primary-title {
+  margin-top: 10px;
+  font-family: PingFang HK-Medium;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 16px;
+  color: #1f2a44;
+}
+
+.side-menu-health-primary-desc {
+  margin-top: 8px;
+  font-family: PingFang HK-Regular;
+  font-size: 10px;
+  line-height: 13px;
+  color: #9aa2b3;
+}
+
+.side-menu-health-divider {
+  height: 1px;
+  margin-left: 14px;
+  margin-right: 14px;
+  background-color: #e9ecf4;
+}
+
+.side-menu-health-secondary-row {
+  height: 49px;
+  margin: 10px 8px 13px 14px;
+  display: flex;
+  flex-direction: row;
+}
+
+.side-menu-health-secondary {
+  flex: 1;
+  height: 48px;
+  padding-left: 6px;
+  padding-right: 11px;
+  border-radius: 7px;
+  box-shadow: 0 4px 10px 0 rgba(200, 208, 230, 0.18);
+  background-color: #fcfbff;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.side-menu-health-secondary-last {
+  margin-left: 16px;
+}
+
+.side-menu-health-secondary-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.side-menu-health-secondary-meta {
+  flex: 1;
+  margin-left: 5px;
+  display: flex;
+  flex-direction: column;
+}
+
+.side-menu-health-secondary-title {
+  font-family: Noto Sans HK-Bold;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 15px;
+  color: #273148;
+}
+
+.side-menu-health-secondary-desc {
+  margin-top: 4px;
+  font-family: Noto Sans HK-Regular;
+  font-size: 9px;
+  line-height: 11px;
+  color: #9ea6b7;
+}
+
+.side-menu-mini-arrow {
+  width: 6px;
+  height: 10px;
+}
+
+.side-menu-menu-list {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.side-menu-item {
+  height: 20px;
+  padding-left: 24px;
+  padding-right: 24px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.side-menu-item-second {
+  margin-top: 26px;
+}
+
+.side-menu-item-third {
+  margin-top: 24px;
+}
+
+.side-menu-item-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.side-menu-item-text {
+  flex: 1;
+  margin-left: 8px;
+  font-family: PingFang SC-Medium;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 15px;
+  color: #303051;
+}
+
+.side-menu-menu-arrow {
+  width: 15px;
+  height: 15px;
+}
+
+.side-menu-ad {
+  height: 100px;
+  margin: 33px 12px 0;
+  border-radius: 16px;
+  overflow: hidden;
+  background-color: #fff1dc;
+}
+
+.side-menu-ad-image {
+  width: 100%;
+  height: 100%;
+}
+
+.side-menu-ad-placeholder {
+  width: 100%;
+  height: 100%;
+  padding-left: 20px;
+  padding-right: 14px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.side-menu-ad-copy {
+  display: flex;
+  flex-direction: column;
+}
+
+.side-menu-ad-title {
+  font-family: PingFang SC-Semibold;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 15px;
+  color: #312f30;
+}
+
+.side-menu-ad-desc {
+  margin-top: 6px;
+  font-family: PingFang SC-Light;
+  font-size: 12px;
+  font-weight: 300;
+  line-height: 14px;
+  color: #3d2f2e;
+}
+
+.side-menu-ad-art {
+  width: 48px;
+  height: 48px;
+}
+
+.side-menu-short-video {
+  height: 48px;
+  margin: 20px 14px 0;
+  padding-left: 14px;
+  padding-right: 14px;
+  border-radius: 8px;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.side-menu-short-video-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.side-menu-short-video-text {
+  flex: 1;
+  margin-left: 10px;
+  color: #303051;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+.side-menu-short-video-arrow {
+  width: 15px;
+  height: 15px;
+}
+
+.side-menu-bottom-safe {
+  height: 30px;
+}
+</style>

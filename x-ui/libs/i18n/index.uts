@@ -1,0 +1,106 @@
+import zhHans from './locales/zh-Hans.uts'
+import zhHant from './locales/zh-Hant.uts'
+import en from './locales/en.uts'
+import es from './locales/es.uts'
+import fr from './locales/fr.uts'
+import de from './locales/de.uts'
+import ko from './locales/ko.uts'
+import ja from './locales/ja.uts'
+import ru from './locales/ru.uts'
+
+function normalizeLocale(locale : string | null = null) : string {
+  if (locale == null || locale.length == 0) {
+    return 'zh-Hans'
+  }
+  const lowered = locale.toLowerCase()
+  if (lowered == 'zh-cn' || lowered == 'zh-hans') {
+    return 'zh-Hans'
+  }
+  if (lowered == 'zh-hk' || lowered == 'zh-tw' || lowered == 'zh-hant') {
+    return 'zh-Hant'
+  }
+  if (lowered.startsWith('en')) {
+    return 'en'
+  }
+  return locale
+}
+
+function getDefaultLocale() : string {
+  return normalizeLocale(uni.getSystemInfoSync().appLanguage)
+}
+
+export const defaultMessages = {
+  en,
+  es,
+  fr,
+  de,
+  ko,
+  ja,
+  ru,
+  'zh-Hant': zhHant,
+  'zh-Hans': zhHans,
+} as UTSJSONObject
+
+let settings = {
+  lang: getDefaultLocale(),
+  locales: UTSJSONObject.assign({}, defaultMessages),
+} as UTSJSONObject
+
+export function setLocale(locale : string | null = null) {
+  settings['lang'] = normalizeLocale(locale)
+}
+
+export function setI18nMessages(messages : UTSJSONObject | null = null) {
+  if (messages == null) {
+    return
+  }
+  UTSJSONObject.keys(messages).forEach((locale) => {
+    const normalizedLocale = normalizeLocale(locale)
+    const current = settings['locales'] as UTSJSONObject
+    current[normalizedLocale] = UTSJSONObject.assign(
+      {},
+      current[normalizedLocale] as UTSJSONObject,
+      messages[locale] as UTSJSONObject,
+    )
+  })
+}
+
+export function setI18nConfig(config : UTSJSONObject | null = null) {
+  if (config == null) {
+    return
+  }
+  if (config['messages'] != null) {
+    setI18nMessages(config['messages'] as UTSJSONObject)
+  }
+  if (config['locale'] != null) {
+    setLocale(config['locale'] as string)
+  }
+}
+
+export function t(value : string, params : UTSJSONObject = {} as UTSJSONObject) : string {
+  if (value.length == 0) {
+    return value
+  }
+
+  const key = value.replaceAll('.', '_')
+  const locales = settings['locales'] as UTSJSONObject
+  const lang = locales[settings['lang'] as string] != null ? settings['lang'] as string : 'zh-Hans'
+  let result = key
+  if (locales[lang] != null && (locales[lang] as UTSJSONObject)[key] != null) {
+    result = ((locales[lang] as UTSJSONObject)[key] as string).toString()
+  }
+
+  UTSJSONObject.keys(params).forEach((paramKey) => {
+    const token = `{${paramKey}}`
+    const replacement = params[paramKey] != null ? (params[paramKey] as any).toString() : ''
+    result = result.replaceAll(token, replacement)
+  })
+  return result
+}
+
+export default {
+  settings,
+  setLocale,
+  setI18nMessages,
+  setI18nConfig,
+}

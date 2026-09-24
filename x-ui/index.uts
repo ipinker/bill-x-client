@@ -1,0 +1,60 @@
+import config from './libs/config/config'
+import color from './libs/config/color'
+import { getBaseVars } from './tokens/presets'
+import { buildCssVarsObject } from './tokens/utils'
+import { setGlobalXkConfig } from './tokens/globalConfig'
+
+function createRuntimeX() : UTSJSONObject {
+  const vars = getBaseVars('light')
+  return UTSJSONObject.assign(
+    {},
+    {
+      config,
+      color,
+      type: ['primary', 'success', 'error', 'warning', 'info'],
+      theme: 'light',
+      themeMode: 'light',
+      resolvedTheme: 'light',
+      vars,
+      themeVars: buildCssVarsObject(vars),
+    } as UTSJSONObject,
+  )
+}
+
+export function mountX() {
+  const runtimeX = createRuntimeX()
+  if (runtimeX['vars'] == null) {
+    runtimeX['vars'] = getBaseVars('light')
+  }
+  runtimeX['themeVars'] = buildCssVarsObject(runtimeX['vars'] as UTSJSONObject)
+  // #ifdef H5
+  const uniRuntime = uni as any as UTSJSONObject
+  uniRuntime['$x'] = runtimeX
+  // #endif
+  setGlobalXkConfig({
+    theme: runtimeX['resolvedTheme'] != null ? runtimeX['resolvedTheme'] : 'light',
+    themeMode: runtimeX['themeMode'] != null ? runtimeX['themeMode'] : 'light',
+    themeVars: runtimeX['vars'],
+  } as UTSJSONObject)
+}
+
+
+export function loadFont() {
+	// uni.loadFontFace({
+	//   global: true,
+	//   family: 'iconfont',
+	//   source: "url('/static/iconfont/iconfont.ttf')", // 需使用url方法包裹。本地字体请放在/static目录下，否则打包时不会把字体文件打进去。也支持网络字体
+	//   success() {
+	// 	console.log('global loadFontFace uni.ttf success')
+	//   },
+	//   fail(error) {
+	// 	console.warn('global loadFontFace uni.ttf fail', error.errMsg)
+	//   }
+	// })
+}
+
+export { useXKongConfig } from './composables/useXKongConfig'
+
+export default {
+  
+}

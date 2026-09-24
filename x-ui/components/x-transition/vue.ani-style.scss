@@ -1,0 +1,113 @@
+/**
+ * vue版本动画内置的动画模式有如下：
+ * fade：淡入
+ * zoom：缩放
+ * fade-zoom：缩放淡入
+ * fade-up：上滑淡入
+ * fade-down：下滑淡入
+ * fade-left：左滑淡入
+ * fade-right：右滑淡入
+ * slide-up：上滑进入
+ * slide-down：下滑进入
+ * slide-left：左滑进入
+ * slide-right：右滑进入
+ */
+
+$x-zoom-scale: scale(0.95);
+
+.x-fade-enter-active,
+.x-fade-leave-active {
+	transition-property: opacity;
+}
+
+.x-fade-enter,
+.x-fade-leave-to {
+	opacity: 0
+}
+
+.x-fade-zoom-enter,
+.x-fade-zoom-leave-to {
+	transform: $x-zoom-scale;
+	opacity: 0;
+}
+
+.x-fade-zoom-enter-active,
+.x-fade-zoom-leave-active {
+	transition-property: transform, opacity;
+}
+
+.x-fade-down-enter-active,
+.x-fade-down-leave-active,
+.x-fade-left-enter-active,
+.x-fade-left-leave-active,
+.x-fade-right-enter-active,
+.x-fade-right-leave-active,
+.x-fade-x-enter-active,
+.x-fade-x-leave-active {
+	transition-property: opacity, transform;
+}
+
+.x-fade-x-enter,
+.x-fade-x-leave-to {
+	transform: translateY(100%);
+	opacity: 0
+}
+
+.x-fade-down-enter,
+.x-fade-down-leave-to {
+	transform: translateY(-100%);
+	opacity: 0
+}
+
+.x-fade-left-enter,
+.x-fade-left-leave-to {
+	transform: translateX(-100%);
+	opacity: 0
+}
+
+.x-fade-right-enter,
+.x-fade-right-leave-to {
+	transform: translateX(100%);
+	opacity: 0
+}
+
+.x-slide-down-enter-active,
+.x-slide-down-leave-active,
+.x-slide-left-enter-active,
+.x-slide-left-leave-active,
+.x-slide-right-enter-active,
+.x-slide-right-leave-active,
+.x-slide-x-enter-active,
+.x-slide-x-leave-active {
+	transition-property: transform;
+}
+
+.x-slide-x-enter,
+.x-slide-x-leave-to {
+	transform: translateY(100%)
+}
+
+.x-slide-down-enter,
+.x-slide-down-leave-to {
+	transform: translateY(-100%)
+}
+
+.x-slide-left-enter,
+.x-slide-left-leave-to {
+	transform: translateX(-100%)
+}
+
+.x-slide-right-enter,
+.x-slide-right-leave-to {
+	transform: translateX(100%)
+}
+
+.x-zoom-enter-active,
+.x-zoom-leave-active {
+	transition-property: transform
+}
+
+.x-zoom-enter,
+.x-zoom-leave-to {
+	transform: $x-zoom-scale
+}

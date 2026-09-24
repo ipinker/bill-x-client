@@ -1,0 +1,25 @@
+{
+  "pages": [
+    {
+      "path": "src/pages/home/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "首页",
+        "pageOrientation": "auto"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "uni-app x",
+    "navigationBarBackgroundColor": "#F8F8F8",
+    "backgroundColor": "#F8F8F8"
+  },
+  "easycom": {
+    "autoscan": true,
+    "custom": {
+      "^x-(.*)": "@/x-ui/components/x-$1/x-$1.uvue"
+    }
+  },
+  "uniIdRouter": {}
+}

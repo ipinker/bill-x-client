@@ -1,0 +1,15 @@
+const color = {
+  primary: '#7157ff',
+  info: '#909399',
+  default: '#909399',
+  warning: '#ff976a',
+  error: '#ee0a24',
+  success: '#07c160',
+  mainColor: '#303051',
+  contentColor: '#6E6E84',
+  tipsColor: '#9B9BAF',
+  lightColor: '#CBCCDD',
+  borderColor: '#d9d9d9',
+} as UTSJSONObject
+
+export default color

@@ -1,0 +1,15 @@
+<script setup lang="uts">
+import { loadFont, mountX } from '@/x-ui/index.uts'
+
+onLaunch(() => {
+   mountX()
+   loadFont()
+})
+</script>
+
+<style lang="scss">
+
+/* uni.scss */
+@import '@/x-ui/index.scss';
+@import './src/style/index.scss';
+</style>

@@ -1,0 +1,79 @@
+<template>
+  <view class="shell-page">
+    <view class="shell-header" @tap="toggleDrawer">
+      <text class="shell-title">XKONG</text>
+      <text class="shell-hint">打开侧边栏</text>
+    </view>
+
+    <side-menu-panel
+      :show="drawerVisible"
+      :panel-width="panelWidth"
+      @close="closeDrawer"
+      @profile="noop"
+      @message="noop"
+      @scan="noop"
+      @coupon-center="noop"
+      @dmc-report="noop"
+      @register="noop"
+      @appointment="noop"
+      @assets="noop"
+      @schedule="noop"
+      @health-record="noop"
+      @follow-up="noop"
+      @invite="noop"
+      @vip-center="noop"
+      @ad="noop"
+      @short-video="noop"
+    />
+  </view>
+</template>
+
+<script setup lang="uts">
+import { computed, ref } from 'vue'
+import SideMenuPanel from './components/side-menu-panel.uvue'
+
+const drawerVisible = ref(true)
+const systemInfo = uni.getSystemInfoSync()
+const panelWidth = computed(() : number => {
+  const width = systemInfo.windowWidth > 0 ? systemInfo.windowWidth - 60 : 330
+  return Math.max(280, width)
+})
+
+function toggleDrawer() : void {
+  drawerVisible.value = !drawerVisible.value
+}
+
+function closeDrawer() : void {
+  drawerVisible.value = false
+}
+
+function noop() : void {
+  // 侧边栏入口在壳项目阶段暂不绑定业务页面。
+}
+</script>
+
+<style>
+.shell-page {
+  flex: 1;
+  background-color: #f7fafc;
+}
+
+.shell-header {
+  height: 96px;
+  padding: 0 24px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.shell-title {
+  color: #17212b;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.shell-hint {
+  color: #64748b;
+  font-size: 13px;
+}
+</style>

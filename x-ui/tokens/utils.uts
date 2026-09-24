@@ -1,0 +1,152 @@
+import config from '../libs/config/config'
+
+function toCssValue(value : any) : string {
+  if (value == null) {
+    return ''
+  }
+  if (typeof value == 'number') {
+    return `${value}px`
+  }
+  return value.toString()
+}
+
+function addAliasVars(vars : UTSJSONObject) : UTSJSONObject {
+  const result = UTSJSONObject.assign({}, vars)
+  UTSJSONObject.keys(vars).forEach((key: string) => {
+    if (key.startsWith('--x-')) {
+      result[key.replace('--x-', '--xp-')] = vars[key]
+    }
+  })
+  result['--theme-color'] = vars['--x-primary']
+  return result
+}
+
+function setVar(target : UTSJSONObject, name : string, value : any | null) {
+  if (value != null) {
+    target[name] = toCssValue(value)
+  }
+}
+
+function setScale(target : UTSJSONObject, vars : UTSJSONObject, name : string) {
+  for (let i = 1; i <= 10; i++) {
+    setVar(target, `--x-${name}-${i}`, vars[`${name}${i}`] ?? null)
+  }
+}
+
+function setPalette(target : UTSJSONObject, vars : UTSJSONObject, name : string) {
+  for (let i = 1; i <= 10; i++) {
+    setVar(target, `--x-${name}-${i}`, vars[`${name}${i}`] ?? null)
+  }
+}
+
+export function mergeVars(base : UTSJSONObject, overrides : UTSJSONObject | null = null) : UTSJSONObject {
+  if (overrides == null) {
+    return UTSJSONObject.assign({}, base)
+  }
+  return UTSJSONObject.assign({}, base, overrides)
+}
+
+export function buildCssVarsObject(vars : UTSJSONObject) : UTSJSONObject {
+  const style = {} as UTSJSONObject
+
+  setVar(style, '--x-primary', vars['primary'])
+  setVar(style, '--x-primary-light', vars['primaryLight'])
+  setVar(style, '--x-success', vars['success'])
+  setVar(style, '--x-success-light', vars['successLight'])
+  setVar(style, '--x-warning', vars['warning'])
+  setVar(style, '--x-warning-light', vars['warningLight'])
+  setVar(style, '--x-danger', vars['danger'])
+  setVar(style, '--x-danger-light', vars['dangerLight'])
+  setVar(style, '--x-info', vars['info'])
+  setVar(style, '--x-info-light', vars['infoLight'])
+
+  setScale(style, vars, 'primary')
+  setScale(style, vars, 'success')
+  setScale(style, vars, 'warning')
+  setScale(style, vars, 'danger')
+  setScale(style, vars, 'info')
+
+  setPalette(style, vars, 'blue')
+  setPalette(style, vars, 'purple')
+  setPalette(style, vars, 'green')
+  setPalette(style, vars, 'red')
+  setPalette(style, vars, 'orange')
+
+  setVar(style, '--x-text-1', vars['text1'])
+  setVar(style, '--x-text-2', vars['text2'])
+  setVar(style, '--x-text-3', vars['text3'])
+  setVar(style, '--x-text-4', vars['text4'])
+  setVar(style, '--x-disabled-color', vars['disabled'])
+  setVar(style, '--x-white', vars['white'])
+  setVar(style, '--x-black', vars['black'])
+  setVar(style, '--x-bg', vars['bg'])
+  setVar(style, '--x-bg-container', vars['bgContainer'])
+  setVar(style, '--x-border', vars['border'])
+  setVar(style, '--x-overlay-background-color', vars['overlayBackgroundColor'])
+  setVar(style, '--x-overlay-color', vars['overlayColor'])
+  setVar(style, '--x-overlay-light-color', vars['overlayLightColor'])
+  setVar(style, '--x-overlay-white-color', vars['overlayWhiteColor'])
+  setVar(style, '--x-overlay-deepwhite-color', vars['overlayDeepWhiteColor'])
+  setVar(style, '--x-picker-mask-strong-color', vars['pickerMaskStrongColor'])
+  setVar(style, '--x-picker-mask-weak-color', vars['pickerMaskWeakColor'])
+  setVar(style, '--x-radius-base', vars['radiusBase'])
+  setVar(style, '--x-radius-sm', vars['radiusSm'])
+  setVar(style, '--x-radius-xs', vars['radiusXS'])
+  setVar(style, '--x-radius-s', vars['radiusS'])
+  setVar(style, '--x-radius-m', vars['radiusM'])
+  setVar(style, '--x-radius-l', vars['radiusL'])
+  setVar(style, '--x-radius-xl', vars['radiusXL'])
+
+  for (let i = 0; i <= 9; i++) {
+    setVar(style, `--x-font-size-${i}`, vars[`fontSize${i}`])
+  }
+
+  setVar(style, '--navbar-height', config['navBarHeight'])
+  setVar(style, '--statusbar-height', config['statusBarHeight'])
+  setVar(style, '--safebar-height', config['safeBarHeight'])
+  setVar(style, '--navbar-height-max', config['navbarHeightMax'])
+
+  setVar(style, '--x-border-color', vars['border'])
+  setVar(style, '--x-bg-color', vars['bg'])
+  setVar(style, '--x-hover-bg-color', vars['bg'])
+  setVar(style, '--x-page-bg-color', vars['bg'])
+  setVar(style, '--x-card-bg-color', vars['bgContainer'])
+  setVar(style, '--x-navbar-bg-color', vars['bgContainer'])
+  setVar(style, '--x-primary-dark', vars['primary7'])
+  setVar(style, '--x-primary-disabled', vars['primary3'])
+  setVar(style, '--x-warning-dark', vars['warning7'])
+  setVar(style, '--x-warning-disabled', vars['warning3'])
+  setVar(style, '--x-success-dark', vars['success7'])
+  setVar(style, '--x-success-disabled', vars['success3'])
+  setVar(style, '--x-error', vars['danger'])
+  setVar(style, '--x-error-dark', vars['danger7'])
+  setVar(style, '--x-error-disabled', vars['danger3'])
+  setVar(style, '--x-error-light', vars['dangerLight'])
+  setVar(style, '--x-info-dark', vars['info7'])
+  setVar(style, '--x-info-disabled', vars['info3'])
+  setVar(style, '--x-switch-active-color', vars['primary'])
+  setVar(style, '--x-switch-inactive-color', vars['bgContainer'])
+  setVar(style, '--x-switch-dot-active-color', vars['white'])
+  setVar(style, '--x-switch-dot-inactive-color', vars['white'])
+  setVar(style, '--x-switch-loading-inactive-color', vars['info5'])
+  setVar(style, '--x-switch-border-color', vars['border'])
+  setVar(style, '--x-button-info-background-color', vars['bgContainer'])
+  setVar(style, '--x-button-plain-background-color', vars['bgContainer'])
+  setVar(style, '--x-tag-close-bg-color', vars['info4'])
+  setVar(style, '--x-info-4', vars['info4'])
+  setVar(style, '--x-fill-color', vars['info1'])
+  setVar(style, '--x-input-border-color', vars['border'])
+  setVar(style, '--x-swipe-action-button-color', vars['white'])
+  setVar(style, '--x-table-head-bg-color', vars['bgContainer'])
+  setVar(style, '--x-table2-header-bg-color', vars['bgContainer'])
+  setVar(style, '--x-table2-zebra-bg-color', vars['bg'])
+  setVar(style, '--x-table2-highlight-bg-color', vars['primaryLight'])
+  setVar(style, '--x-gap-bg-color', vars['bg'])
+  setVar(style, '--x-skeleton-bg-color', vars['info1'])
+  setVar(style, '--x-skeleton-shimmer-color', vars['info2'])
+  setVar(style, '--x-swipe-action-button-bg-color', vars['info3'])
+  setVar(style, '--x-index-list-indicator-bg-color', vars['info3'])
+  setVar(style, '--x-calendar-month-mark-color', vars['info1'])
+
+  return addAliasVars(style)
+}

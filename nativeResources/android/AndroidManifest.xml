@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- 开发环境：允许访问当前内网 API 网关；发布前应切换 HTTPS 并删除此例外。 -->
+  <application android:usesCleartextTraffic="true" />
+</manifest>

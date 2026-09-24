@@ -1,0 +1,172 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import 'tailwindcss';
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'SF Pro Display', 'Segoe UI', sans-serif;
+  background: #ECECF5;
+}
+
+body { overflow-x: hidden; }
+
+[data-copy-design-screen] > * {
+  width: 100%;
+  height: auto !important;
+  min-width: 0;
+  min-height: 780px;
+  overflow: visible !important;
+}
+
+/* Copy design should capture the complete page, not the first viewport. */
+[data-copy-design-screen] [data-copy-scroll] {
+  flex: none !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+
+/* The invitation poster is authored at 375×667 and scales proportionally in preview. */
+.invite-page-content > div:nth-child(2) {
+  width: 100%;
+  aspect-ratio: 375 / 667;
+  display: flex;
+  flex-direction: column;
+}
+
+.invite-page-content > div:nth-child(2) > div:last-child {
+  margin-top: auto !important;
+}
+
+.invite-page-content > div:nth-child(2)::after {
+  content: "邀请好友一起记录生活\A\A新用户 · 首月会员体验\A会员用户 · AI 体验积分\A双方一起 · 开启云端同步";
+  white-space: pre;
+  position: absolute;
+  left: 50%;
+  top: 57%;
+  transform: translate(-50%, -50%);
+  width: calc(100% - 52px);
+  padding: 18px 14px 20px;
+  border: 1px solid rgba(255,255,255,.24);
+  border-radius: 19px;
+  background: linear-gradient(135deg, rgba(255,255,255,.18), rgba(255,255,255,.07));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 12px 28px rgba(39,16,109,.12);
+  color: rgba(255,255,255,.86);
+  text-align: center;
+  font-size: 11px;
+  line-height: 2.05;
+  letter-spacing: .06em;
+  pointer-events: none;
+}
+
+/* Todo form: lighter controls to match the rest of the glass-card UI. */
+[data-todo-form] .todo-input,
+[data-todo-form] .todo-date,
+[data-todo-form] .todo-priority,
+[data-todo-form] .todo-reminder {
+  border-width: 1px !important;
+  border-color: rgba(77, 62, 119, .14) !important;
+  box-shadow: 0 4px 14px rgba(46, 35, 86, .035);
+}
+
+[data-todo-form] .todo-input {
+  background: rgba(255,255,255,.82) !important;
+}
+
+[data-todo-form] .todo-priority {
+  box-shadow: none;
+}
+
+p, span, div, button, h1, h2, h3 {
+  margin: 0;
+  padding: 0;
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  box-sizing: border-box;
+}
+
+button, input, textarea { font: inherit; }
+button:focus-visible, input:focus-visible, textarea:focus-visible {
+  outline: 2px solid rgba(124,77,255,.62);
+  outline-offset: 2px;
+}
+
+::selection { background: rgba(124,77,255,.18); color: #33215f; }
+
+::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; }
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-ring {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes tabIconActivate {
+  0% { transform: scale(.78) rotate(-8deg); opacity: .35; }
+  65% { transform: scale(1.12) rotate(3deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+.tab-icon-active { display: inline-flex; animation: tabIconActivate .28s cubic-bezier(.2,.8,.3,1) both; }
+
+.animate-fade-up {
+  animation: fadeSlideUp 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.tab-content { animation: fadeSlideUp 0.25s cubic-bezier(0.4, 0, 0.2, 1) both; }
+
+.glass {
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.07);
+}
+
+.glass-blue {
+  background: rgba(0, 129, 255, 0.12);
+  border: 1px solid rgba(0, 129, 255, 0.2);
+}
+
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0);
+  transition: background 0.15s;
+}
+
+.ripple:active::after {
+  background: rgba(255,255,255,0.07);
+}
+
+.mono { font-family: 'JetBrains Mono', 'SF Mono', monospace; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

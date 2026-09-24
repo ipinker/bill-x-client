@@ -1,0 +1,9 @@
+import { darkThemeVars } from './dark'
+import { lightThemeVars } from './light'
+
+export function getBaseVars(theme : string) : UTSJSONObject {
+  if (theme == 'dark') {
+    return UTSJSONObject.assign({}, darkThemeVars)
+  }
+  return UTSJSONObject.assign({}, lightThemeVars)
+}

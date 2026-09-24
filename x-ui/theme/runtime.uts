@@ -1,0 +1,79 @@
+import { buildCssVarsObject } from '../tokens/utils'
+import { getBaseVars } from '../tokens/presets'
+
+function getRuntimeX(x : UTSJSONObject | null = null) : UTSJSONObject {
+  if (x != null) {
+    return x
+  }
+  // #ifdef H5
+  const uniRuntime = uni as UTSJSONObject
+  if (typeof uni != 'undefined' && uniRuntime['$x'] != null) {
+    return uniRuntime['$x'] as UTSJSONObject
+  }
+  // #endif
+  return {} as UTSJSONObject
+}
+
+function getThemeMode(runtimeX : UTSJSONObject) : string {
+  if (runtimeX['resolvedTheme'] != null) {
+    return runtimeX['resolvedTheme'] as string
+  }
+  if (runtimeX['theme'] != null) {
+    return runtimeX['theme'] as string
+  }
+  return 'light'
+}
+
+function getThemeVars(runtimeX : UTSJSONObject) : UTSJSONObject {
+  const mode = getThemeMode(runtimeX)
+  const baseVars = getBaseVars(mode == 'dark' ? 'dark' : 'light')
+  if (runtimeX['vars'] != null) {
+    return UTSJSONObject.assign({}, baseVars, runtimeX['vars'] as UTSJSONObject)
+  }
+  return baseVars
+}
+
+function tryCall(callback : () => void) {
+  try {
+    callback()
+  }
+  catch (e) {
+    // ignore native theme sync failures
+  }
+}
+
+export function getThemeVarsForStyle(x : UTSJSONObject | null = null) : UTSJSONObject {
+  return buildCssVarsObject(getThemeVars(getRuntimeX(x)))
+}
+
+export function getThemeVar(varName : string, fallbackColor : string = '', x : UTSJSONObject | null = null) : string {
+  const vars = getThemeVarsForStyle(getRuntimeX(x))
+  const value = vars[varName]
+  if (value != null) {
+    return value.toString()
+  }
+  return fallbackColor
+}
+
+export function getThemeIsDark(x : UTSJSONObject | null = null) : boolean {
+  return getThemeMode(getRuntimeX(x)) == 'dark'
+}
+
+export function applyNativeThemeUI(x : UTSJSONObject | null = null) {
+  const runtimeX = getRuntimeX(x)
+  const isDark = getThemeIsDark(runtimeX)
+  const navigationBarStyle = {
+    frontColor: isDark ? '#ffffff' : '#000000',
+    backgroundColor: getThemeVar('--x-navbar-bg-color', isDark ? '#1f1f1f' : '#ffffff', runtimeX),
+  } as SetNavigationBarColorOptions
+
+  tryCall(() => {
+    uni.setNavigationBarColor(navigationBarStyle)
+  })
+}
+
+export function applyNativeThemeUIDeferred(x : UTSJSONObject | null = null) {
+  setTimeout(() => {
+    applyNativeThemeUI(x)
+  }, 0)
+}

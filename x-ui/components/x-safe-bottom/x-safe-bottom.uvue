@@ -1,0 +1,46 @@
+<template>
+	<view
+		class="x-safe-bottom"
+		:style="[style]"
+		:class="[!isNvue ? 'x-safe-area-inset-bottom': '']"
+	>
+	</view>
+</template>
+
+<script setup lang="uts">
+import { computed, onMounted, ref } from 'vue'
+import { addStyle, addUnit, deepMerge } from '../../libs/function/index'
+
+defineOptions({
+	name: 'x-safe-bottom'
+})
+
+const props = defineProps({
+	customStyle: {
+		type: [Object, String],
+		default: (): UTSJSONObject => ({})
+	}
+})
+
+const isNvue = ref<boolean>(false)
+
+const style = computed((): UTSJSONObject => {
+	const safeAreaStyle = {} as UTSJSONObject
+	// #ifdef APP-NVUE || MP-TOUTIAO
+	safeAreaStyle['height'] = addUnit(uni.getWindowInfo().safeAreaInsets.bottom, 'px')
+	// #endif
+	return deepMerge(safeAreaStyle, addStyle(props.customStyle))
+})
+
+onMounted((): void => {
+	// #ifdef APP-NVUE
+	isNvue.value = true
+	// #endif
+})
+</script>
+
+<style lang="scss" scoped>
+	.x-safe-bottom {
+		width: 100%;
+	}
+</style>

@@ -1,0 +1,32 @@
+{
+  "name": "unibestx",
+  "version": "1.0.0",
+  "description": "XK-UI",
+  "scripts": {
+    "log:server": "node scripts/dev-log-server.mjs",
+    "test:log-server": "node --test scripts/dev-log-server.test.mjs",
+    "test:contract": "node --test scripts/http-adapter-contract.test.mjs",
+    "yapi": "npx ytt -c yapi/yapi-to-ts.ts"
+  },
+  "dependencies": {
+    "@dcloudio/uni-app": "3.0.0-alpha-5020120260706001",
+    "@dcloudio/uni-h5-vue": "3.0.0-alpha-5020120260706001",
+    "@dcloudio/vite-plugin-uni": "3.0.0-alpha-5020120260706001",
+    "@limeui/unocss-preset": "^0.0.9",
+    "unocss": "^66.7.4",
+    "vite": "5.2.8",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@dcloudio/types": "^3.4.31",
+    "@types/node": "^24.0.0",
+    "@uni-helper/eslint-config": "0.5.0",
+    "@uni-helper/uni-app-types": "^1.0.1",
+    "@unocss/config": "^66.7.5",
+    "eslint": "^9.39.4",
+    "eslint-plugin-format": "^1.5.0",
+    "sass": "^1.63.2",
+    "typescript": "^5.8.0",
+    "yapi-to-typescript": "^3.38.0"
+  }
+}

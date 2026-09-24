@@ -1,0 +1,5 @@
+import { globalXkConfig } from '../tokens/globalConfig'
+
+export function useXKongConfig() {
+  return globalXkConfig
+}

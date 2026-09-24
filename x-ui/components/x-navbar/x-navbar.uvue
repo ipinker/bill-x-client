@@ -1,0 +1,260 @@
+<template>
+  <view v-if="fixed && placeholder" class="x-navbar-placeholder" :style="getPlaceholderStyle()"></view>
+
+  <view :class="getWrapperClass()">
+    <view class="x-navbar" :style="getNavbarStyle()">
+      <view v-if="safeAreaInsetTop && statusBarHeight > 0" class="x-navbar-status" :style="getStatusBarStyle()"></view>
+
+      <view class="x-navbar-content">
+        <view class="x-navbar-left" @tap="handleBack">
+          <image v-if="useBack" class="x-navbar-back-icon" :src="getBackIcon()" mode="aspectFit" />
+          <text v-else-if="backText != ''" class="x-navbar-back" :style="getBackTextStyle()">{{ backText }}</text>
+        </view>
+
+        <view class="x-navbar-center">
+          <text v-if="title != ''" class="x-navbar-title" :style="getTitleStyle()">{{ title }}</text>
+          <slot v-else name="center" />
+        </view>
+
+        <view class="x-navbar-right">
+          <slot name="right" />
+        </view>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script setup lang="uts">
+const props = defineProps({
+  title: {
+    type: String,
+    default: '',
+  },
+  useBack: {
+    type: Boolean,
+    default: false,
+  },
+  backText: {
+    type: String,
+    default: '',
+  },
+  backIcon: {
+    type: String,
+    default: '',
+  },
+  titleFontSize: {
+    type: Number,
+    default: 0,
+  },
+  titleTextColor: {
+    type: String,
+    default: '',
+  },
+  titleColor: {
+    type: String,
+    default: '',
+  },
+  transparent: {
+    type: Boolean,
+    default: false,
+  },
+  safeAreaInsetTop: {
+    type: Boolean,
+    default: false,
+  },
+  placeholder: {
+    type: Boolean,
+    default: false,
+  },
+  fixed: {
+    type: Boolean,
+    default: false,
+  },
+  autoBack: {
+    type: Boolean,
+    default: true,
+  },
+  bgColor: {
+    type: String,
+    default: '',
+  },
+  statusBarBgColor: {
+    type: String,
+    default: '',
+  },
+  theme: {
+    type: String,
+    default: '',
+  },
+  height: {
+    type: Number,
+    default: 44,
+  },
+})
+
+const emit = defineEmits(['back'])
+const systemInfo = uni.getSystemInfoSync()
+const statusBarHeight = systemInfo.statusBarHeight > 0 ? systemInfo.statusBarHeight : 0
+
+function getNavHeight() : number {
+  return props.height > 0 ? props.height : 44
+}
+
+function getNavbarBackgroundColor() : string {
+  if (props.transparent) {
+    return 'transparent'
+  }
+  return props.bgColor != '' ? props.bgColor : '#ffffff'
+}
+
+function getStatusBarBackgroundColor() : string {
+  return props.statusBarBgColor != '' ? props.statusBarBgColor : getNavbarBackgroundColor()
+}
+
+function getTitleColor() : string {
+  if (props.titleTextColor != '') {
+    return props.titleTextColor
+  }
+  if (props.titleColor != '') {
+    return props.titleColor
+  }
+  return props.theme == 'dark' ? '#ffffff' : '#303051'
+}
+
+function getWrapperClass() : string {
+  return props.fixed ? 'x-navbar-wrapper x-navbar-wrapper-fixed' : 'x-navbar-wrapper'
+}
+
+function getPlaceholderStyle() : UTSJSONObject {
+  return {
+    height: `${(props.safeAreaInsetTop ? statusBarHeight : 0) + getNavHeight()}px`,
+  } as UTSJSONObject
+}
+
+function getNavbarStyle() : UTSJSONObject {
+  return {
+    backgroundColor: getNavbarBackgroundColor(),
+  } as UTSJSONObject
+}
+
+function getStatusBarStyle() : UTSJSONObject {
+  return {
+    height: `${statusBarHeight}px`,
+    backgroundColor: getStatusBarBackgroundColor(),
+  } as UTSJSONObject
+}
+
+function getTitleStyle() : UTSJSONObject {
+  return {
+    fontSize: props.titleFontSize > 0 ? `${props.titleFontSize}px` : '32rpx',
+    color: getTitleColor(),
+  } as UTSJSONObject
+}
+
+function getBackTextStyle() : UTSJSONObject {
+  return {
+    color: getTitleColor(),
+  } as UTSJSONObject
+}
+
+function getBackIcon() : string {
+  if (props.backIcon != '') {
+    return props.backIcon
+  }
+  return getTitleColor().toLowerCase() == '#ffffff'
+    ? '/static/images/back-white.png'
+    : '/static/images/back.png'
+}
+
+function handleBack(): void {
+  if (!props.useBack && props.backText == '') {
+    return
+  }
+  emit('back')
+  if (props.autoBack) {
+    uni.navigateBack()
+  }
+}
+</script>
+
+<style scoped>
+.x-navbar-placeholder {
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.x-navbar-wrapper {
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.x-navbar-wrapper-fixed {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+}
+
+.x-navbar {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.x-navbar-status {
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.x-navbar-content {
+  height: 44px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 24rpx;
+  padding-right: 24rpx;
+  box-sizing: border-box;
+}
+
+.x-navbar-left {
+  min-width: 96rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.x-navbar-center {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+
+.x-navbar-right {
+  min-width: 96rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.x-navbar-back {
+  font-size: 28rpx;
+  color: #303051;
+}
+
+.x-navbar-back-icon {
+  width: 44px;
+  height: 44px;
+}
+
+.x-navbar-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #303051;
+}
+</style>

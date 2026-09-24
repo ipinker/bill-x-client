@@ -1,0 +1,72 @@
+<template>
+    <view :style="[customStyleValue]"
+		:class="[customClass]" class="x-cell-group">
+        <view v-if="title" class="x-cell-group__title">
+            <slot name="title">
+				<text class="x-cell-group__title__text">
+					{{ title }}
+				</text>
+			</slot>
+        </view>
+        <view class="x-cell-group__wrapper">
+			<x-line v-if="border"></x-line>
+            <slot />
+        </view>
+    </view>
+</template>
+
+
+<script setup lang="ts">
+	import { computed } from 'vue'
+	import { addStyle } from '../../libs/function/index'
+	import defProps from './cellGroup'
+	// props
+	const props = defineProps({
+		title: {
+			type: String,
+			default: defProps.getString('cellGroup.title')
+		},
+		border: {
+			type: Boolean,
+			default: defProps.getBoolean('cellGroup.border')
+		},
+		customStyle: {
+			type: [String, Object],
+			default: ''
+		},
+		customClass: {
+			type: String,
+			default: ''
+		}
+	})
+	const customStyleValue = computed(() => addStyle(props.customStyle))
+	defineOptions({
+		name: "x-cell-group"
+	})
+</script>
+
+<style lang="scss" scoped>
+	@import "../../libs/css/components.scss";
+	
+	$x-cell-grox-title-padding: 16px 16px 8px !default;
+	$x-cell-grox-title-font-size: 15px !default;
+	$x-cell-grox-title-line-height: 16px !default;
+	$x-cell-grox-title-color: $x-main-color !default;
+
+    .x-cell-group {
+		
+        &__title {
+            padding: $x-cell-grox-title-padding;
+
+            &__text {
+                font-size: $x-cell-grox-title-font-size;
+                line-height: $x-cell-grox-title-line-height;
+                color: $x-cell-grox-title-color;
+            }
+        }
+		
+		&__wrapper {
+			position: relative;
+		}
+    }
+</style>

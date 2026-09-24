@@ -1,0 +1,5 @@
+// 此文件由 vite.config.ts 根据 xkong-hpp/env 自动生成，请勿手改。
+export const REQUEST_H5_BASE_URL = "/dev-api"
+export const REQUEST_SERVER_BASE_URL = 'http://192.168.143.129/api'
+export const REQUEST_SECONDARY_BASE_URL = "https://xkang-gateway-uat.nhf.cn"
+export const REQUEST_MEDICAL_BASE_URL = "https://xkang-gateway-dev.nhf.cn"

@@ -1,0 +1,289 @@
+<template>
+    <view class="x-textarea" :class="textareaClass" :style="textareaStyle">
+        <textarea
+            class="x-textarea__field"
+            :value="innerValue"
+            :style="{ height: addUnit(height) }"
+            :placeholder="placeholder"
+            :placeholder-style="addStyle(placeholderStyle)"
+            :placeholder-class="placeholderClass"
+            :disabled="disabled"
+            :focus="focus"
+            :autoHeight="autoHeight"
+            :fixed="fixed"
+            :cursorSpacing="cursorSpacing"
+            :cursor="cursor"
+            :showConfirmBar="showConfirmBar"
+            :selectionStart="selectionStart"
+            :selectionEnd="selectionEnd"
+            :adjustPosition="adjustPosition"
+            :disableDefaultPadding="disableDefaultPadding"
+            :holdKeyboard="holdKeyboard"
+            :maxlength="maxlength"
+            :confirm-type="confirmType"
+            :ignoreCompositionEvent="ignoreCompositionEvent"
+            @focus="onFocus"
+            @blur="onBlur"
+            @linechange="onLinechange"
+            @input="onInput"
+            @confirm="onConfirm"
+            @keyboardheightchange="onKeyboardheightchange"
+        ></textarea>
+		<!-- #ifndef MP-ALIPAY -->
+        <text
+            class="x-textarea__count"
+            :style="{
+                'background-color': disabled ? 'transparent' : '#fff',
+            }"
+            v-if="count"
+            >{{ innerValue.length }}/{{ maxlength }}</text
+        >
+		<!-- #endif -->
+    </view>
+</template>
+
+<script setup lang="uts">
+import { computed, getCurrentInstance, nextTick, ref, watch } from 'vue'
+import { addStyle, addUnit, deepMerge, formValidate } from '../../libs/function/index'
+
+defineOptions({
+  name: 'x-textarea',
+})
+
+const props = defineProps({
+  modelValue: {
+    type: String,
+    default: '',
+  },
+  placeholder: {
+    type: [String],
+    default: '',
+  },
+  placeholderClass: {
+    type: String,
+    default: 'input-placeholder',
+  },
+  placeholderStyle: {
+    type: [String, Object],
+    default: '',
+  },
+  height: {
+    type: [String, Number],
+    default: 70,
+  },
+  confirmType: {
+    type: String,
+    default: 'done',
+  },
+  disabled: {
+    type: Boolean,
+    default: false,
+  },
+  count: {
+    type: Boolean,
+    default: false,
+  },
+  focus: {
+    type: Boolean,
+    default: false,
+  },
+  autoHeight: {
+    type: Boolean,
+    default: false,
+  },
+  fixed: {
+    type: Boolean,
+    default: false,
+  },
+  cursorSpacing: {
+    type: Number,
+    default: 0,
+  },
+  cursor: {
+    type: [String, Number],
+    default: 0,
+  },
+  showConfirmBar: {
+    type: Boolean,
+    default: true,
+  },
+  selectionStart: {
+    type: Number,
+    default: -1,
+  },
+  selectionEnd: {
+    type: Number,
+    default: -1,
+  },
+  adjustPosition: {
+    type: Boolean,
+    default: true,
+  },
+  disableDefaultPadding: {
+    type: Boolean,
+    default: false,
+  },
+  holdKeyboard: {
+    type: Boolean,
+    default: false,
+  },
+  maxlength: {
+    type: [String, Number],
+    default: 140,
+  },
+  border: {
+    type: String,
+    default: 'surround',
+  },
+  formatter: {
+    type: [Function],
+    default: null,
+  },
+  ignoreCompositionEvent: {
+    type: Boolean,
+    default: true,
+  },
+  customStyle: {
+    type: Object,
+    default: () : UTSJSONObject => ({} as UTSJSONObject),
+  },
+})
+
+const emit = defineEmits(['update:modelValue', 'linechange', 'focus', 'blur', 'change', 'confirm', 'keyboardheightchange'])
+const innerValue = ref<string>('')
+const firstChange = ref<boolean>(true)
+const changeFromInner = ref<boolean>(false)
+const innerFormatter = ref<Function>(defaultFormat)
+const instance = getCurrentInstance()
+
+function defaultFormat(value : string) : string {
+  return value
+}
+
+const textareaClass = computed(() : string => {
+  const classes = [] as Array<string>
+  if (props.border === 'surround') {
+    classes.push('x-border', 'x-textarea--radius')
+  }
+  if (props.border === 'bottom') {
+    classes.push('x-border-bottom', 'x-textarea--no-radius')
+  }
+  if (props.disabled) {
+    classes.push('x-textarea--disabled')
+  }
+  return classes.join(' ')
+})
+
+const textareaStyle = computed(() : UTSJSONObject => {
+  return deepMerge({} as UTSJSONObject, addStyle(props.customStyle))
+})
+
+watch(() : string => props.modelValue, (newVal : string) : void => {
+  innerValue.value = newVal
+  // #ifdef H5
+  if (firstChange.value === false && changeFromInner.value === false) {
+    valueChange()
+  }
+  // #endif
+  firstChange.value = false
+  changeFromInner.value = false
+}, {
+  immediate: true,
+})
+
+function getFormContext() : any {
+  return instance == null ? null : instance.proxy
+}
+
+function setFormatter(e : Function) : void {
+  innerFormatter.value = e
+}
+
+function onFocus(e : UniTextareaFocusEvent) : void {
+  emit('focus', e)
+}
+
+function onBlur(e : UniTextareaBlurEvent) : void {
+  emit('blur', e)
+  formValidate(getFormContext(), 'blur')
+}
+
+function onLinechange(e : UniTextareaLineChangeEvent) : void {
+  emit('linechange', e)
+}
+
+function valueChange() : void {
+  const value = innerValue.value
+  void nextTick(() => {
+    emit('update:modelValue', value)
+    changeFromInner.value = true
+    emit('change', value)
+    formValidate(getFormContext(), 'change')
+  })
+}
+
+function onInput(e : UniInputEvent) : void {
+  const value = e.detail.value
+  const formatValue = innerFormatter.value != null ? (innerFormatter.value as Function)(value) as string : value
+  innerValue.value = value
+  void nextTick(() => {
+    innerValue.value = formatValue
+    valueChange()
+  })
+}
+
+function onConfirm(e : UniInputConfirmEvent) : void {
+  emit('confirm', e)
+}
+
+function onKeyboardheightchange(e : UniInputKeyboardHeightChangeEvent) : void {
+  emit('keyboardheightchange', e)
+}
+
+defineExpose({
+  setFormatter,
+})
+</script>
+
+<style lang="scss" scoped>
+@import "../../libs/css/components.scss";
+
+.x-textarea {
+    border-radius: 4px;
+    background-color: #fff;
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+	padding: 9px;
+
+    &--radius {
+        border-radius: 4px;
+    }
+
+    &--no-radius {
+        border-radius: 0;
+    }
+
+    &--disabled {
+        background-color: #f5f7fa;
+    }
+
+    &__field {
+        flex: 1;
+        font-size: 15px;
+        color: $x-content-color;
+		width: 100%;
+    }
+
+    &__count {
+        position: absolute;
+        right: 5px;
+        bottom: 2px;
+        font-size: 12px;
+        color: $x-tips-color;
+        background-color: #ffffff;
+        padding: 1px 4px;
+    }
+}
+</style>

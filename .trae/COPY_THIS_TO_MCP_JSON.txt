@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "uni-app-x": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@dcloudio/uni-app-x-mcp"
+      ]
+    },
+    "figma-desktop": {
+      "url": "http://127.0.0.1:3845/mcp",
+      "type": "http"
+    }
+  }
+}

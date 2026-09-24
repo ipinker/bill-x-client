@@ -1,0 +1,85 @@
+// nvue下hover-class无效
+$x-button-before-top:50% !default;
+$x-button-before-left:50% !default;
+$x-button-before-width:100% !default;
+$x-button-before-height:100% !default;
+$x-button-before-transform:translate(-50%, -50%) !default;
+$x-button-before-opacity:0 !default;
+$x-button-before-background-color:#000 !default;
+$x-button-before-border-color:#000 !default;
+$x-button-active-before-opacity:.15 !default;
+$x-button-icon-margin-left:4px !default;
+$x-button-plain-x-button-info-color:$x-info;
+$x-button-plain-x-button-success-color:$x-success;
+$x-button-plain-x-button-error-color:$x-error;
+$x-button-plain-x-button-warning-color:$x-error;
+
+.x-button {
+	width: 100%;
+	white-space: nowrap;
+	
+	&__text {
+		white-space: nowrap;
+		line-height: 1;
+	}
+	
+	&:before {
+		position: absolute;
+		top:$x-button-before-top;
+		left:$x-button-before-left;
+		width:$x-button-before-width;
+		height:$x-button-before-height;
+		/* #ifndef UNI-APP-X */
+		border: inherit;
+		border-radius: inherit;
+		/* #endif */
+		transform:$x-button-before-transform;
+		opacity:$x-button-before-opacity;
+		// content: " ";
+		background-color:$x-button-before-background-color;
+		border-color:$x-button-before-border-color;
+	}
+	
+	&--active {
+		&:before {
+			opacity: .15
+		}
+	}
+	
+	/* #ifndef UNI-APP-X */
+	&__icon+&__text:not(:empty),
+	/* #endif */
+	&__loading-text {
+		margin-left:$x-button-icon-margin-left;
+	}
+	
+	&--plain {
+		&.x-button--primary {
+			color: $x-primary;
+		}
+	}
+	
+	&--plain {
+		&.x-button--info {
+			color:$x-button-plain-x-button-info-color;
+		}
+	}
+
+	&--plain {
+		&.x-button--success {
+			color:$x-button-plain-x-button-success-color;
+		}
+	}
+	
+	&--plain {
+		&.x-button--error {
+			color:$x-button-plain-x-button-error-color;
+		}
+	}
+	
+	&--plain {
+		&.x-button--warning {
+			color:$x-button-plain-x-button-warning-color;
+		}
+	}
+}

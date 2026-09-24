@@ -1,0 +1,628 @@
+<template>
+	<view style="position: relative"
+		:style="[baseColor, customStyleValue]"
+		class="x-button"
+		:hover-class="!disabled && !loading ? 'x-button--active' : ''"
+		:class="bemClass">
+		<template v-if="loading">
+		    <x-loading-icon
+		        :mode="loadingMode"
+		        :size="loadingIconSize"
+		        :color="loadingColor"
+		    ></x-loading-icon>
+		    <text
+		        class="x-button__text x-button__loading-text"
+		        :style="[{ fontSize: textSize + 'px' }]"
+		        >{{ loadingText != '' ? loadingText : text }}</text
+		    >
+		</template>
+		<template v-else>
+		    <x-icon
+		        v-if="icon != ''"
+		        :name="icon"
+		        :color="iconColorCom"
+		        :size="iconSize"
+		        :customStyle="{ marginRight: '2px' }"
+		    ></x-icon>
+		    <slot>
+		        <text
+		            class="x-button__text"
+		            :style="[{ fontSize: textSize + 'px'}]"
+		            >
+		            {{ text }}
+		        </text>
+		    </slot>
+		</template>
+		<button
+			:hover-start-time="hoverStartTime"
+			:hover-stay-time="hoverStayTime"
+			:form-type="formType"
+			:open-type="openType"
+			:app-parameter="appParameter"
+			:hover-stop-propagation="hoverStopPropagation"
+			:send-message-title="sendMessageTitle"
+			:send-message-path="sendMessagePath"
+			:lang="lang"
+			:data-name="dataName"
+			:session-from="sessionFrom"
+			:send-message-img="sendMessageImg"
+			:show-message-card="showMessageCard"
+			@getphonenumber="getphonenumber"
+			@getuserinfo="getuserinfo"
+			@error="error"
+			@opensetting="opensetting"
+			@launchapp="launchapp"
+			:loading="loading"
+			:hover-class="!disabled && !loading ? 'x-button__button--active' : ''"
+			style="background: #fff;position: absolute;top:0;bottom:0;left:0;right:0;opacity: 0;"
+			class="x-reset-button"
+			@click="clickHandler"
+		>
+		</button>
+	</view>
+</template>
+
+<script setup lang="uts">
+import defProps from './button'
+import { computed } from 'vue'
+import { addStyle, addUnit, getPx, bem } from '../../libs/function/index'
+import { throttle } from '../../libs/function/throttle'
+import config from '../../libs/config/config'
+const props = defineProps({
+    // 是否显示按钮的细边框
+    hairline: {
+        type: Boolean,
+        default: () => defProps.getBoolean('button.hairline')
+    },
+    // 按钮的预置样式，info，primary，error，warning，success
+    type: {
+        type: String,
+        default: () => defProps.getString('button.type')
+    },
+    // 按钮尺寸，large，normal，mini
+    size: {
+        type: String,
+        default: () => defProps.getString('button.size')
+    },
+    // 按钮形状，circle（两边为半圆），square（带圆角）
+    shape: {
+        type: String,
+        default: () => defProps.getString('button.shape')
+    },
+    // 按钮是否镂空，背景色透明
+    plain: {
+        type: Boolean,
+        default: () => defProps.getBoolean('button.plain')
+    },
+    // 是否禁用
+    disabled: {
+        type: Boolean,
+        default: () => defProps.getBoolean('button.disabled')
+    },
+    // 按钮名称前是否带 loading 图标(App-nvue 平台，在 ios 上为雪花，Android上为圆圈)
+    loading: {
+        type: Boolean,
+        default: () => defProps.getBoolean('button.loading')
+    },
+    // 加载中提示文字
+    loadingText: {
+        type: String,
+        default: () => defProps.getString('button.loadingText')
+    },
+    // 加载状态图标类型
+    loadingMode: {
+        type: String,
+        default: () => defProps.getString('button.loadingMode')
+    },
+    // 加载图标大小
+    loadingSize: {
+        type: Number,
+        default: () => defProps.getNumber('button.loadingSize')
+    },
+    // 开放能力，具体请看uniapp稳定关于button组件部分说明
+    openType: {
+        type: String,
+        default: () => defProps.getString('button.openType')
+    },
+    // 用于 <form> 组件，点击分别会触发 <form> 组件的 submit/reset 事件
+    formType: {
+        type: String,
+        default: () => defProps.getString('button.formType')
+    },
+    // 打开 APP 时，向 APP 传递的参数，open-type=launchApp时有效
+    appParameter: {
+        type: String,
+        default: () => defProps.getString('button.appParameter')
+    },
+    // 指定是否阻止本节点的祖先节点出现点击态，微信小程序有效
+    hoverStopPropagation: {
+        type: Boolean,
+        default: () => defProps.getBoolean('button.hoverStopPropagation')
+    },
+    // 指定返回用户信息的语言，zh_CN 简体中文，zh_TW 繁体中文，en 英文
+    lang: {
+        type: String,
+        default: () => defProps.getString('button.lang')
+    },
+    // 会话来源，openType="contact"时有效
+    sessionFrom: {
+        type: String,
+        default: () => defProps.getString('button.sessionFrom')
+    },
+    // 会话内消息卡片标题，openType="contact"时有效
+    sendMessageTitle: {
+        type: String,
+        default: () => defProps.getString('button.sendMessageTitle')
+    },
+    // 会话内消息卡片点击跳转小程序路径，openType="contact"时有效
+    sendMessagePath: {
+        type: String,
+        default: () => defProps.getString('button.sendMessagePath')
+    },
+    // 会话内消息卡片图片，openType="contact"时有效
+    sendMessageImg: {
+        type: String,
+        default: () => defProps.getString('button.sendMessageImg')
+    },
+    // 是否显示会话内消息卡片，设置此参数为 true，用户进入客服会话会在右下角显示"可能要发送的小程序"提示，用户点击后可以快速发送小程序消息，openType="contact"时有效
+    showMessageCard: {
+        type: Boolean,
+        default: () => defProps.getBoolean('button.showMessageCard')
+    },
+    // 额外传参参数，用于小程序的data-xxx属性，通过target.dataset.name获取
+    dataName: {
+        type: String,
+        default: () => defProps.getString('button.dataName')
+    },
+    // 节流，一定时间内只能触发一次
+    throttleTime: {
+        type: [String, Number],
+        default: () => defProps.getNumber('button.throttleTime')
+    },
+    // 按住后多久出现点击态，单位毫秒
+    hoverStartTime: {
+        type: [String, Number],
+        default: () => defProps.getNumber('button.hoverStartTime')
+    },
+    // 手指松开后点击态保留时间，单位毫秒
+    hoverStayTime: {
+        type: [String, Number],
+        default: () => defProps.getNumber('button.hoverStayTime')
+    },
+    // 按钮文字，之所以通过props传入，是因为slot传入的话（注：nvue中无法控制文字的样式）
+    text: {
+        type: [String, Number],
+        default: () => defProps.getString('button.text')
+    },
+    // 按钮图标
+    icon: {
+        type: String,
+        default: () => defProps.getString('button.icon')
+    },
+    // 按钮图标颜色
+    iconColor: {
+        type: String,
+        default: () => defProps.getString('button.iconColor')
+    },
+    // 按钮颜色，支持传入linear-gradient渐变色
+    color: {
+        type: String,
+        default: () => defProps.getString('button.color')
+    },
+    // 自定义外部样式
+    customStyle: {
+        type: [String, Object],
+        default: ''
+    }
+})
+
+const emit = defineEmits(['click', 'getphonenumber', 'getuserinfo', 'error', 'opensetting', 'launchapp'])
+
+// 生成bem风格的类名
+const bemClass = computed(() => {
+    let ret = ""
+    if (props.color == '') {
+        ret = bem(
+            "button",
+            [props.type, props.shape, props.size] ,
+            [
+                ["disabled", props.disabled],
+                ["plain", props.plain],
+                ["hairline", props.hairline],
+            ]
+        );
+    } else {
+        // 由于nvue的原因，在有color参数时，不需要传入type，否则会生成type相关的类型，影响最终的样式
+        ret = bem(
+            "button",
+            [props.shape, props.size] ,
+            [
+                ["disabled", props.disabled],
+                ["plain", props.plain],
+                ["hairline", props.hairline],
+            ]
+        );
+    }
+    return ret
+});
+
+const loadingColor = computed(() => {
+    if (props.plain) {
+        // 如果有设置color值，则用color值，否则使用type主题颜色
+        return props.color != ''
+            ? props.color
+            : config.getString(`color.x-${props.type}`) as string;
+    }
+    if (props.type == "info") {
+        return "#c9c9c9";
+    }
+    return "rgb(200, 200, 200)";
+});
+
+const iconColorCom = computed(() => {
+    // 如果是镂空状态，设置了color就用color值，否则使用主题颜色，
+    // x-icon的color能接受一个主题颜色的值
+    if (props.iconColor != '') return props.iconColor;
+    if (props.plain) {
+        return props.color != '' ? props.color : props.type;
+    } else {
+        return "";
+    }
+});
+
+const baseColor = computed(() => {
+    let style = {
+    } as UTSJSONObject;
+    if (props.color != '') {
+        // 针对自定义了color颜色的情况，镂空状态下，就是用自定义的颜色
+        // style['color'] = props.plain ? props.color : "white";
+        if (!props.plain) {
+            // 非镂空，背景色使用自定义的颜色
+            style["backgroundColor"] = props.color;
+        }
+        if ((props.color.toString()).indexOf("gradient") != -1) {
+            // 如果自定义的颜色为渐变色，不显示边框，以及通过backgroundImage设置渐变色
+            // weex文档说明可以写borderWidth的形式，为什么这里需要分开写？
+            // 因为weex是阿里巴巴为了部门业绩考核而做的你懂的东西，所以需要这么写才有效
+            style['borderWidth'] = 0;
+            if (!props.plain) {
+                style['backgroundImage'] = props.color;
+            }
+        } else {
+            // 非渐变色，则设置边框相关的属性
+            style['borderColor'] = props.color;
+            style['borderWidth'] = "1px";
+            style['borderStyle'] = "solid";
+        }
+    }
+    return style;
+});
+
+const customStyleValue = computed(() : any => {
+    return addStyle(props.customStyle)
+})
+
+// 字体大小
+const textSize = computed(() => {
+    let fontSize = '14px';
+    if (props.size === "large") fontSize = '16px';
+    if (props.size === "normal") fontSize = '14px';
+    if (props.size === "small") fontSize = '12px';
+    if (props.size === "mini") fontSize = '10px';
+    return fontSize;
+});
+
+const loadingIconSize = computed(() : string => {
+    return addUnit(props.loadingSize * 1.15)
+})
+
+const iconSize = computed(() : string => {
+    return addUnit(parseInt(getPx(textSize.value, false).toString()) * 1.35, 'px')
+})
+
+const clickHandler = (): void => {
+    // 非禁止并且非加载中，才能点击
+    if (!props.disabled && !props.loading) {
+        // 进行节流控制，每throttle毫秒内，只在开始处执行
+        throttle(() => {
+            emit("click")
+        }, parseInt(props.throttleTime.toString()))
+    } else {
+        console.log('禁止点击')
+    }
+};
+
+// 对接uniapp官方按钮开放能力事件回调
+const getphonenumber = (res: UniEvent): void => {
+    emit("getphonenumber", res)
+};
+
+const getuserinfo = (res: UniEvent): void => {
+    emit("getuserinfo", res)
+};
+
+const error = (res: UniEvent): void => {
+    emit("error", res)
+};
+
+const opensetting = (res: UniEvent): void => {
+    emit("opensetting", res)
+};
+
+const launchapp = (res: UniEvent): void => {
+    emit("launchapp", res)
+};
+</script>
+
+<style lang="scss" scoped>
+$x-button-x-button-height: 40px !default;
+$x-button-text-font-size: 15px !default;
+$x-button-loading-text-font-size: 15px !default;
+$x-button-loading-text-margin-left: 4px !default;
+$x-button-large-width: 100% !default;
+$x-button-large-height: 50px !default;
+$x-button-normal-padding: 0 12px !default;
+$x-button-large-padding: 0 15px !default;
+$x-button-normal-font-size: 14px !default;
+$x-button-small-min-width: 60px !default;
+$x-button-small-height: 30px !default;
+$x-button-small-padding: 0px 8px !default;
+$x-button-mini-padding: 0px 8px !default;
+$x-button-small-font-size: 12px !default;
+$x-button-mini-height: 22px !default;
+$x-button-mini-font-size: 10px !default;
+$x-button-mini-min-width: 50px !default;
+$x-button-disabled-opacity: 0.5 !default;
+$x-button-info-color: #323233 !default;
+$x-button-info-background-color: #fff !default;
+$x-button-info-border-color: #ebedf0 !default;
+$x-button-info-border-width: 1px !default;
+$x-button-info-border-style: solid !default;
+$x-button-success-color: #fff !default;
+$x-button-success-background-color: $x-success !default;
+$x-button-success-border-color: $x-button-success-background-color !default;
+$x-button-success-border-width: 1px !default;
+$x-button-success-border-style: solid !default;
+$x-button-primary-color: #fff !default;
+$x-button-primary-background-color: $x-primary !default;
+$x-button-primary-border-color: $x-button-primary-background-color !default;
+$x-button-primary-border-width: 1px !default;
+$x-button-primary-border-style: solid !default;
+$x-button-error-color: #fff !default;
+$x-button-error-background-color: $x-error !default;
+$x-button-error-border-color: $x-button-error-background-color !default;
+$x-button-error-border-width: 1px !default;
+$x-button-error-border-style: solid !default;
+$x-button-warning-color: #fff !default;
+$x-button-warning-background-color: $x-warning !default;
+$x-button-warning-border-color: $x-button-warning-background-color !default;
+$x-button-warning-border-width: 1px !default;
+$x-button-warning-border-style: solid !default;
+$x-button-block-width: 100% !default;
+$x-button-circle-border-top-right-radius: 100px !default;
+$x-button-circle-border-top-left-radius: 100px !default;
+$x-button-circle-border-bottom-left-radius: 100px !default;
+$x-button-circle-border-bottom-right-radius: 100px !default;
+$x-button-square-border-top-right-radius: 3px !default;
+$x-button-square-border-top-left-radius: 3px !default;
+$x-button-square-border-bottom-left-radius: 3px !default;
+$x-button-square-border-bottom-right-radius: 3px !default;
+$x-button-icon-min-width: 4px !default;
+$x-button-plain-background-color: #fff !default;
+$x-button-hairline-border-width: 0.5px !default;
+$x-button-active-opacity:0.75 !default;
+$x-button-before-top:50% !default;
+$x-button-before-left:50% !default;
+$x-button-before-width:100% !default;
+$x-button-before-height:100% !default;
+$x-button-before-transform:translate(-50%, -50%) !default;
+$x-button-before-opacity:0 !default;
+$x-button-before-background-color:#000 !default;
+$x-button-before-border-color:#000 !default;
+$x-button-active-before-opacity:.15 !default;
+$x-button-icon-margin-left:4px !default;
+$x-button-plain-x-button-info-color:#000000 !default;;
+$x-button-plain-x-button-success-color:$x-success !default;;
+$x-button-plain-x-button-error-color:$x-error !default;;
+$x-button-plain-x-button-warning-color:$x-error !default;;
+
+.x-button {
+    height: $x-button-x-button-height;
+    position: relative;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+
+	&__text {
+		font-size: $x-button-text-font-size;
+		color: #fff;
+	}
+	
+	&__loading-text {
+		font-size: $x-button-loading-text-font-size;
+		margin-left: $x-button-loading-text-margin-left;
+	}
+	
+	&--large {
+		width: $x-button-large-width;
+		height: $x-button-large-height;
+		padding: $x-button-large-padding;
+	}
+	
+	&--normal {
+		padding: $x-button-normal-padding;
+		.x-button__text {
+			font-size: $x-button-normal-font-size;
+		}
+	}
+	
+	&--small {
+		min-width: $x-button-small-min-width;
+		height: $x-button-small-height;
+		padding: $x-button-small-padding;
+		.x-button__text {
+			font-size: $x-button-small-font-size;
+		}
+	}
+	
+	&--mini {
+		height: $x-button-mini-height;
+		.x-button__text {
+			font-size: $x-button-mini-font-size;
+		}
+		min-width: $x-button-mini-min-width;
+		padding: $x-button-mini-padding;
+	}
+	
+	&--disabled {
+		opacity: $x-button-disabled-opacity;
+	}
+	
+	&--active {
+		opacity: $x-button-active-opacity;
+	}
+	
+	&--info {
+		.x-button__text {
+			color: $x-button-info-color;
+		}
+		background-color: $x-button-info-background-color !important;
+		border-color: $x-button-info-border-color !important;
+		border-width: $x-button-info-border-width !important;
+		border-style: $x-button-info-border-style !important;
+	}
+	
+	&--success {
+		.x-button__text {
+			color: $x-button-success-color;
+		}
+		background-color: $x-button-success-background-color !important;
+		border-color: $x-button-success-border-color !important;
+		border-width: $x-button-success-border-width !important;
+		border-style: $x-button-success-border-style !important;
+	}
+	
+	&--primary {
+		.x-button__text {
+			color: $x-button-primary-color;
+		}
+		background-color: $x-button-primary-background-color !important;
+		border-color: $x-button-primary-border-color !important;
+		border-width: $x-button-primary-border-width !important;
+		border-style: $x-button-primary-border-style !important;
+	}
+	
+	&--error {
+		.x-button__text {
+			color: $x-button-error-color;
+		}
+		background-color: $x-button-error-background-color !important;
+		border-color: $x-button-error-border-color !important;
+		border-width: $x-button-error-border-width !important;
+		border-style: $x-button-error-border-style !important;
+	}
+	
+	&--warning {
+		.x-button__text {
+			color: $x-button-warning-color;
+		}
+		background-color: $x-button-warning-background-color !important;
+		border-color: $x-button-warning-border-color !important;
+		border-width: $x-button-warning-border-width !important;
+		border-style: $x-button-warning-border-style !important;
+	}
+	
+	&--block {
+		display: flex;
+		flex-direction: row;
+		width: $x-button-block-width;
+	}
+	
+	&--circle {
+		border-top-right-radius: $x-button-circle-border-top-right-radius;
+		border-top-left-radius: $x-button-circle-border-top-left-radius;
+		border-bottom-left-radius: $x-button-circle-border-bottom-left-radius;
+		border-bottom-right-radius: $x-button-circle-border-bottom-right-radius;
+	}
+	
+	&--square {
+		border-bottom-left-radius: $x-button-square-border-top-right-radius;
+		border-bottom-right-radius: $x-button-square-border-top-left-radius;
+		border-top-left-radius: $x-button-square-border-bottom-left-radius;
+		border-top-right-radius: $x-button-square-border-bottom-right-radius;
+	}
+	
+	&__icon {
+		min-width: $x-button-icon-min-width;
+		// line-height: inherit !important;
+		// vertical-align: top;
+	}
+	
+	&--plain {
+		background-color: $x-button-plain-background-color !important;
+		&.x-button--primary {
+			.x-button__text {
+				color: $x-primary;
+			}
+		}
+		&.x-button--info {
+			.x-button__text {
+				color:$x-button-plain-x-button-info-color;
+			}
+		}
+		&.x-button--success {
+			.x-button__text {
+				color:$x-button-plain-x-button-success-color;
+			}
+		}
+		&.x-button--error {
+			.x-button__text {
+				color:$x-button-plain-x-button-error-color;
+			}
+		}
+		&.x-button--warning {
+			.x-button__text {
+				color:$x-button-plain-x-button-warning-color;
+			}
+		}
+	}
+	
+	&--hairline {
+		border-width: $x-button-hairline-border-width !important;
+	}
+	
+	&:before {
+		position: absolute;
+		top:$x-button-before-top;
+		left:$x-button-before-left;
+		width:$x-button-before-width;
+		height:$x-button-before-height;
+		/* #ifndef UNI-APP-X */
+		border: inherit;
+		border-radius: inherit;
+		/* #endif */
+		transform:$x-button-before-transform;
+		opacity:$x-button-before-opacity;
+		// content: " ";
+		background-color:$x-button-before-background-color !important;
+		border-color:$x-button-before-border-color !important;
+	}
+	
+	&__button--active {
+		opacity: .2 !important;
+		&:before {
+			opacity: .15
+		}
+	}
+	
+	/* #ifndef UNI-APP-X */
+	&__icon+&__text:not(:empty),
+	/* #endif */
+	&__loading-text {
+		margin-left:$x-button-icon-margin-left;
+	}
+}
+
+</style>

@@ -1,0 +1,14 @@
+[mcp_servers.uni-app-x-mcp]
+command = "npx"
+args = [
+  "-y",
+  "@dcloudio/uni-app-x-mcp",
+]
+
+[mcp_servers.figma]
+url = "https://mcp.figma.com/mcp"
+type = "http"
+
+[mcp_servers.figma-desktop]
+url = "http://127.0.0.1:3845/mcp"
+type = "http"

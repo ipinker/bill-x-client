@@ -1,0 +1,14 @@
+<template>
+  <view class="app-shell">
+    <slot></slot>
+  </view>
+</template>
+
+<script setup lang="uts">
+</script>
+
+<style>
+.app-shell {
+  flex: 1;
+}
+</style>

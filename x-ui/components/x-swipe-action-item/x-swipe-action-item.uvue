@@ -1,0 +1,311 @@
+<template>
+  <view class="x-swipe-action-item">
+    <view class="x-swipe-action-item-actions">
+      <view
+        v-for="(item, index) in options"
+        :key="index"
+        class="x-swipe-action-item-action"
+        :style="getActionStyle(item)"
+        @tap="handleActionTap(item, index)"
+      >
+        <x-icon v-if="getOptionString(item, 'icon') != ''" :name="getOptionString(item, 'icon')" :color="getOptionColor(item)" :size="getOptionIconSize(item)" />
+        <text v-if="getOptionString(item, 'text') != ''" class="x-swipe-action-item-action-text" :style="getTextStyle(item)">{{ getOptionString(item, 'text') }}</text>
+      </view>
+    </view>
+    <view
+      class="x-swipe-action-item-content"
+      :style="contentStyle"
+      @touchstart="handleTouchStart"
+      @touchmove="handleTouchMove"
+      @touchend="handleTouchEnd"
+      @touchcancel="handleTouchCancel"
+    >
+      <slot />
+    </view>
+  </view>
+</template>
+
+<script setup lang="uts">
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { addUnit } from '../../libs/function/index'
+
+const SWIPE_ACTION_CLOSE_EVENT = 'x-swipe-action-close'
+let swipeActionItemSequence = 0
+
+const props = defineProps({
+  show: {
+    type: Boolean,
+    default: false,
+  },
+  closeOnClick: {
+    type: Boolean,
+    default: true,
+  },
+  name: {
+    type: [String, Number],
+    default: '',
+  },
+  disabled: {
+    type: Boolean,
+    default: false,
+  },
+  autoClose: {
+    type: Boolean,
+    default: true,
+  },
+  threshold: {
+    type: Number,
+    default: 20,
+  },
+  options: {
+    type: Array<UTSJSONObject>,
+    default: () : Array<UTSJSONObject> => [] as Array<UTSJSONObject>,
+  },
+  duration: {
+    type: [String, Number],
+    default: 300,
+  },
+})
+
+const emit = defineEmits(['click', 'update:show'])
+const instanceId = `x_swipe_action_item_${swipeActionItemSequence++}`
+const opened = ref<boolean>(props.show)
+const moving = ref<boolean>(false)
+const startX = ref<number>(0)
+const startY = ref<number>(0)
+const currentOffset = ref<number>(0)
+
+const actionWidth = computed(() : number => {
+  let total = 0
+  for (let index : number = 0; index < props.options.length; index++) {
+    total += getActionWidth(props.options[index])
+  }
+  return total
+})
+
+const contentStyle = computed(() : UTSJSONObject => {
+  return {
+    transform: `translateX(${currentOffset.value}px)`,
+    transition: moving.value ? 'none' : `transform ${getDuration()}ms`,
+  } as UTSJSONObject
+})
+
+function getOptionStyle(option : any | null) : UTSJSONObject {
+  if (option == null) {
+    return {} as UTSJSONObject
+  }
+  const optionObject = option as UTSJSONObject
+  if (optionObject['style'] == null) {
+    return {} as UTSJSONObject
+  }
+  return optionObject['style'] as UTSJSONObject
+}
+
+function getOptionString(option : any | null, key : string, fallback : string = '') : string {
+  if (option == null) {
+    return fallback
+  }
+  const optionObject = option as UTSJSONObject
+  if (optionObject[key] == null) {
+    return fallback
+  }
+  return optionObject[key]!.toString()
+}
+
+function getActionWidth(option : any | null) : number {
+  const style = getOptionStyle(option)
+  if (style['width'] != null) {
+    const width = parseFloat(style['width']!.toString())
+    if (!isNaN(width) && width > 0) {
+      return width
+    }
+  }
+  return 80
+}
+
+function getOptionColor(option : any | null) : string {
+  const style = getOptionStyle(option)
+  return style['color'] == null ? '#ffffff' : style['color']!.toString()
+}
+
+function getOptionIconSize(option : any | null) : string {
+  const size = getOptionString(option, 'iconSize')
+  if (size != '') {
+    return addUnit(size)
+  }
+  const style = getOptionStyle(option)
+  return style['fontSize'] == null ? '17px' : addUnit(style['fontSize'])
+}
+
+function getActionStyle(option : any | null) : UTSJSONObject {
+  const style = getOptionStyle(option)
+  const result = {
+    width: `${getActionWidth(option)}px`,
+    backgroundColor: style['backgroundColor'] == null ? '#c7c6cd' : style['backgroundColor']!.toString(),
+  } as UTSJSONObject
+  if (style['borderRadius'] != null) {
+    result['borderRadius'] = style['borderRadius']
+  }
+  return result
+}
+
+function getTextStyle(option : any | null) : UTSJSONObject {
+  const style = getOptionStyle(option)
+  return {
+    color: getOptionColor(option),
+    fontSize: style['fontSize'] == null ? '16px' : addUnit(style['fontSize']),
+  } as UTSJSONObject
+}
+
+function getDuration() : number {
+  const value = props.duration.toString().replace('ms', '').replace('s', '')
+  const duration = parseFloat(value)
+  if (isNaN(duration)) {
+    return 300
+  }
+  return props.duration.toString().indexOf('s') >= 0 && props.duration.toString().indexOf('ms') < 0 ? duration * 1000 : duration
+}
+
+function setOpened(nextOpened : boolean, notify : boolean = true) : void {
+  opened.value = nextOpened
+  currentOffset.value = nextOpened ? -actionWidth.value : 0
+  if (notify) {
+    emit('update:show', nextOpened)
+  }
+  if (nextOpened && props.autoClose) {
+    uni.$emit(SWIPE_ACTION_CLOSE_EVENT, instanceId)
+  }
+}
+
+function closeSwipeAction() : void {
+  setOpened(false)
+}
+
+function handleOtherOpened(sourceId : string) : void {
+  if (sourceId != instanceId && opened.value) {
+    setOpened(false)
+  }
+}
+
+function getTouchPoint(event : UniTouchEvent, changed : boolean = false) : UniTouch | null {
+  const touches = changed ? event.changedTouches : event.touches
+  return touches.length > 0 ? touches[0] : null
+}
+
+function handleTouchStart(event : UniTouchEvent) : void {
+  if (props.disabled) {
+    return
+  }
+  const touch = getTouchPoint(event)
+  if (touch == null) {
+    return
+  }
+  moving.value = true
+  startX.value = touch.pageX
+  startY.value = touch.pageY
+}
+
+function handleTouchMove(event : UniTouchEvent) : void {
+  if (props.disabled || !moving.value) {
+    return
+  }
+  const touch = getTouchPoint(event)
+  if (touch == null) {
+    return
+  }
+  const offsetX = touch.pageX - startX.value
+  const offsetY = touch.pageY - startY.value
+  if (Math.abs(offsetY) > Math.abs(offsetX)) {
+    return
+  }
+  event.preventDefault()
+  event.stopPropagation()
+  const baseOffset = opened.value ? -actionWidth.value : 0
+  currentOffset.value = Math.max(-actionWidth.value, Math.min(0, baseOffset + offsetX))
+}
+
+function finishTouch(event : UniTouchEvent) : void {
+  if (props.disabled || !moving.value) {
+    return
+  }
+  moving.value = false
+  const touch = getTouchPoint(event, true)
+  if (touch == null) {
+    setOpened(opened.value)
+    return
+  }
+  const offsetX = touch.pageX - startX.value
+  if (opened.value) {
+    setOpened(offsetX > -props.threshold)
+    return
+  }
+  setOpened(offsetX <= -props.threshold)
+}
+
+function handleTouchEnd(event : UniTouchEvent) : void {
+  finishTouch(event)
+}
+
+function handleTouchCancel(event : UniTouchEvent) : void {
+  finishTouch(event)
+}
+
+function handleActionTap(_option : any | null, index : number) : void {
+  emit('click', {
+    index,
+    name: props.name,
+  } as UTSJSONObject)
+  if (props.closeOnClick) {
+    closeSwipeAction()
+  }
+}
+
+watch(() : boolean => props.show, (value : boolean) : void => {
+  setOpened(value, false)
+}, {
+  immediate: true,
+})
+
+onMounted(() : void => {
+  uni.$on(SWIPE_ACTION_CLOSE_EVENT, handleOtherOpened)
+})
+
+onUnmounted(() : void => {
+  uni.$off(SWIPE_ACTION_CLOSE_EVENT, handleOtherOpened)
+})
+</script>
+
+<style scoped>
+.x-swipe-action-item {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.x-swipe-action-item-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: row;
+}
+
+.x-swipe-action-item-action {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+
+.x-swipe-action-item-action-text {
+  line-height: 20px;
+}
+
+.x-swipe-action-item-content {
+  width: 100%;
+  z-index: 1;
+  background-color: #ffffff;
+}
+</style>

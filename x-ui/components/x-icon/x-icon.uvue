@@ -1,0 +1,48 @@
+<template>
+  <text class="x-icon" :style="iconStyle">{{ glyph }}</text>
+</template>
+
+<script setup lang="uts">
+import { computed } from 'vue'
+
+const props = defineProps({
+  name: {
+    type: String,
+    default: '',
+  },
+  size: {
+    type: [String, Number],
+    default: 32,
+  },
+  color: {
+    type: String,
+    default: '#303051',
+  },
+})
+
+const glyphMap: UTSJSONObject = {
+  'arrow-left': '‹',
+  'arrow-right': '›',
+  'close': '×',
+} as UTSJSONObject
+
+const glyph = computed(() : string => {
+  const value = glyphMap[props.name]
+  return value == null ? '•' : value.toString()
+})
+
+const iconStyle = computed(() : UTSJSONObject => {
+  const sizeValue = typeof props.size == 'number' ? `${props.size}px` : props.size.toString()
+  return {
+    color: props.color,
+    fontSize: sizeValue,
+    lineHeight: sizeValue,
+  } as UTSJSONObject
+})
+</script>
+
+<style scoped>
+.x-icon {
+  text-align: center;
+}
+</style>

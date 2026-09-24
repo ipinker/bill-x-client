@@ -1,0 +1,39 @@
+import { computed, ref } from 'vue'
+import { getBaseVars } from './presets'
+import { mergeVars } from './utils'
+
+const themeRef = ref('light')
+const themeModeRef = ref('light')
+const localeRef = ref('')
+const messagesRef = ref<UTSJSONObject | null>(null)
+const themeVarsRef = ref<UTSJSONObject | null>(null)
+
+export function setGlobalXkConfig(config : UTSJSONObject) {
+  if (config['theme'] != null) {
+    themeRef.value = config['theme'] as string
+  }
+  if (config['themeMode'] != null) {
+    themeModeRef.value = config['themeMode'] as string
+  }
+  if (config['locale'] != null) {
+    localeRef.value = config['locale'] as string
+  }
+  if (config['messages'] != null) {
+    messagesRef.value = config['messages'] as UTSJSONObject
+  }
+  if (config['themeVars'] != null) {
+    themeVarsRef.value = config['themeVars'] as UTSJSONObject
+  }
+}
+
+export const globalXkConfig = {
+  theme: computed(() => themeRef.value),
+  themeMode: computed(() => themeModeRef.value),
+  isDark: computed(() => themeRef.value == 'dark'),
+  locale: computed(() => localeRef.value),
+  messages: computed(() => messagesRef.value),
+  vars: computed(() => {
+    const base = getBaseVars(themeRef.value)
+    return mergeVars(base, themeVarsRef.value)
+  }),
+}

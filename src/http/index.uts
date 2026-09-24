@@ -1,0 +1,92 @@
+import { REQUEST_SERVER_BASE_URL } from '../constants'
+import type { HttpRequestConfig } from './request/types'
+
+function resolveUrl(path: string, config: HttpRequestConfig): string {
+  const baseUrl = config.baseURL ?? REQUEST_SERVER_BASE_URL
+  if (baseUrl.endsWith('/') && path.startsWith('/')) {
+    return `${baseUrl}${path.substring(1)}`
+  }
+  if (!baseUrl.endsWith('/') && !path.startsWith('/')) {
+    return `${baseUrl}/${path}`
+  }
+  return `${baseUrl}${path}`
+}
+
+function request<T>(path: string, method: string, data: any | null, config: HttpRequestConfig = {}): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    uni.request({
+      url: resolveUrl(path, config),
+      method,
+      data,
+      header: config.header ?? ({} as UTSJSONObject),
+      success: response => {
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          resolve(response.data as T)
+          return
+        }
+        reject(new Error(`HTTP ${response.statusCode}`))
+      },
+      fail: error => reject(error),
+    })
+  })
+}
+
+function upload<T>(path: string, config: HttpRequestConfig = {}): Promise<T> {
+  if (config.filePath == null || config.filePath == '') {
+    return new Promise<T>((_resolve, reject) => {
+      reject(new Error('上传请求缺少 filePath'))
+    })
+  }
+
+  return new Promise<T>((resolve, reject) => {
+    uni.uploadFile({
+      url: resolveUrl(path, config),
+      filePath: config.filePath as string,
+      name: config.name ?? 'file',
+      formData: config.formData ?? ({} as UTSJSONObject),
+      header: config.header ?? ({} as UTSJSONObject),
+      success: response => {
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          try {
+            resolve(JSON.parse(response.data) as T)
+          }
+          catch (error) {
+            reject(error)
+          }
+          return
+        }
+        reject(new Error(`HTTP ${response.statusCode}`))
+      },
+      fail: error => reject(error),
+    })
+  })
+}
+
+class HttpClient {
+  Get<T>(path: string, config?: HttpRequestConfig): Promise<T> {
+    return request<T>(path, 'GET', null, config ?? {})
+  }
+  Head<T>(path: string, config?: HttpRequestConfig): Promise<T> {
+    return request<T>(path, 'HEAD', null, config ?? {})
+  }
+  Options<T>(path: string, data: any | null, config?: HttpRequestConfig): Promise<T> {
+    return request<T>(path, 'OPTIONS', data, config ?? {})
+  }
+  Delete<T>(path: string, data: any | null, config?: HttpRequestConfig): Promise<T> {
+    return request<T>(path, 'DELETE', data, config ?? {})
+  }
+  Put<T>(path: string, data: any | null, config?: HttpRequestConfig): Promise<T> {
+    return request<T>(path, 'PUT', data, config ?? {})
+  }
+  Patch<T>(path: string, data: any | null, config?: HttpRequestConfig): Promise<T> {
+    return request<T>(path, 'PATCH', data, config ?? {})
+  }
+  Post<T>(path: string, data: any | null, config?: HttpRequestConfig): Promise<T> {
+    return request<T>(path, 'POST', data, config ?? {})
+  }
+  Upload<T>(path: string, config?: HttpRequestConfig): Promise<T> {
+    return upload<T>(path, config ?? {})
+  }
+}
+
+export const http = new HttpClient()

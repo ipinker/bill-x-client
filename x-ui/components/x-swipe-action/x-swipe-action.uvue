@@ -1,0 +1,15 @@
+<template>
+	<view class="x-swipe-action">
+		<slot></slot>
+	</view>
+</template>
+
+<script setup lang="uts">
+defineOptions({
+  name: 'x-swipe-action',
+})
+</script>
+
+<style lang="scss" scoped>
+
+</style>

@@ -1,0 +1,349 @@
+<template>
+	<view
+		class="x-loading-icon"
+		:style="[addStyle(customStyle)]"
+		:class="[vertical ? 'x-loading-icon--vertical' : '']"
+		v-if="show"
+	>
+		<view
+			v-if="!webviewHide"
+			class="x-loading-icon__spinner"
+			:class="[`x-loading-icon__spinner--${mode}`]"
+			ref="ani"
+			:style="{
+				transform: transform,
+				width: addUnit(size),
+				height: addUnit(size),
+				borderTopColor: color,
+				borderBottomColor: otherBorderColor,
+				borderLeftColor: otherBorderColor,
+				borderRightColor: otherBorderColor
+				// 'animation-duration': `${duration}ms`,
+				// 'animation-timing-function': (mode === 'semicircle' || mode === 'circle') ? timingFunction : ''
+			}"
+		>
+			<template v-if="mode === 'spinner'">
+				<view
+					v-for="(item, index) in array12"
+					:key="index"
+					class="x-loading-icon__dot"
+					:style="[spinnerStyle[index], getSpinnerDotStyle(index)]"
+				>
+				</view>
+			</template>
+		</view>
+		<text
+			v-if="text != ''"
+			class="x-loading-icon__text"
+			:class="vertical ? 'x-loading-icon__text-vertical' : ''"
+			:style="{
+				fontSize: addUnit(textSize),
+				color: textColor,
+			}"
+		>{{text}}</text>
+	</view>
+</template>
+
+<script setup lang="uts">
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { addStyle, addUnit, getPx } from '../../libs/function/index'
+import { colorGradient } from '../../libs/function/colorGradient'
+
+defineOptions({
+  name: 'x-loading-icon',
+})
+
+const props = defineProps({
+  show: {
+    type: Boolean,
+    default: true,
+  },
+  color: {
+    type: String,
+    default: '',
+  },
+  textColor: {
+    type: String,
+    default: '',
+  },
+  vertical: {
+    type: Boolean,
+    default: false,
+  },
+  mode: {
+    type: String,
+    default: 'spinner',
+  },
+  size: {
+    type: [String, Number],
+    default: '24',
+  },
+  textSize: {
+    type: [String, Number],
+    default: '15',
+  },
+  text: {
+    type: [String, Number],
+    default: '',
+  },
+  timingFunction: {
+    type: String,
+    default: 'ease-in-out',
+  },
+  duration: {
+    type: [String, Number],
+    default: 1200,
+  },
+  inactiveColor: {
+    type: String,
+    default: '',
+  },
+  customStyle: {
+    type: Object,
+    default: () : UTSJSONObject => ({} as UTSJSONObject),
+  },
+})
+
+const array12 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+const webviewHide = ref<boolean>(false)
+const degree = ref<number>(0)
+const transform = ref<string>('')
+const animationFrame = ref<number>(0)
+const spinnerStyle = ref<Array<UTSJSONObject>>([
+  { left: 0, top: 0 } as UTSJSONObject, { left: 0, top: 0 } as UTSJSONObject, { left: 0, top: 0 } as UTSJSONObject, { left: 0, top: 0 } as UTSJSONObject,
+  { left: 0, top: 0 } as UTSJSONObject, { left: 0, top: 0 } as UTSJSONObject, { left: 0, top: 0 } as UTSJSONObject, { left: 0, top: 0 } as UTSJSONObject,
+  { left: 0, top: 0 } as UTSJSONObject, { left: 0, top: 0 } as UTSJSONObject, { left: 0, top: 0 } as UTSJSONObject, { left: 0, top: 0 } as UTSJSONObject,
+])
+
+const otherBorderColor = computed(() : string => {
+  const gradientColors = colorGradient(props.color, '#ffffff', 100)
+  const lightColor = gradientColors.length > 80 ? gradientColors[80] : '#e5e5e5'
+  if (props.mode === 'circle') {
+    return props.inactiveColor != '' ? props.inactiveColor : lightColor
+  }
+  return 'transparent'
+})
+
+function getSpinnerDotStyle(index : number) : UTSJSONObject {
+  return {
+    backgroundColor: props.color,
+    transform: `rotate(${((index + 1) * 30).toString()}deg)`,
+    opacity: 1 - 0.0625 * index,
+  } as UTSJSONObject
+}
+
+function getRotateDuration() : number {
+  const durationNumber = parseInt(props.duration.toString())
+  return durationNumber > 0 ? durationNumber : 1200
+}
+
+function getRotateStep() : number {
+  return 360 * 16 / getRotateDuration()
+}
+
+function rotateLoader() : void {
+  degree.value = (degree.value + getRotateStep()) % 360
+  transform.value = `rotate(${degree.value.toString()}deg)`
+}
+
+function calculateSquareRadius(sideLength : number) : number {
+  const diagonalLength = Math.sqrt(sideLength * sideLength + sideLength * sideLength)
+  return diagonalLength / 2
+}
+
+function calcSpinnerTopAndLeft() : void {
+  for (let index : number = 0; index < array12.length; index++) {
+    const angle = index * (360 / 12)
+    const angleRad = angle * (Math.PI / 180)
+    const banjing = calculateSquareRadius(parseInt(getPx(parseInt(props.size.toString()) * 2, false)))
+    const xOffset = banjing * Math.cos(angleRad)
+    const yOffset = banjing * Math.sin(angleRad)
+    spinnerStyle.value[index]['left'] = `${Math.round(45 + xOffset).toString()}%`
+    spinnerStyle.value[index]['top'] = `${Math.round(34 + yOffset).toString()}%`
+  }
+}
+
+function startRotate() : void {
+  if (!props.show || animationFrame.value > 0) {
+    return
+  }
+  animationFrame.value = setInterval(() => {
+    rotateLoader()
+  }, 16)
+}
+
+function stopRotate() : void {
+  if (animationFrame.value > 0) {
+    clearInterval(animationFrame.value)
+    animationFrame.value = 0
+  }
+}
+
+watch(() : boolean => props.show, (value : boolean) : void => {
+  if (value) {
+    startRotate()
+  } else {
+    stopRotate()
+  }
+}, {
+  immediate: true,
+})
+
+onMounted(() : void => {
+  calcSpinnerTopAndLeft()
+  startRotate()
+})
+
+onUnmounted(() : void => {
+  stopRotate()
+})
+</script>
+
+<style lang="scss" scoped>
+	@import "../../libs/css/components.scss";
+
+	$x-loading-icon-color: #c8c9cc !default;
+	$x-loading-icon-text-margin-left:4px !default;
+	$x-loading-icon-text-color:$x-content-color !default;
+	$x-loading-icon-text-font-size:14px !default;
+	$x-loading-icon-text-line-height:20px !default;
+	$x-loading-width:30px !default;
+	$x-loading-height:30px !default;
+	$x-loading-max-width:100% !default;
+	$x-loading-max-height:100% !default;
+	$x-loading-semicircle-border-width: 2px !default;
+	$x-loading-semicircle-border-color:transparent !default;
+	$x-loading-semicircle-border-top-right-radius: 100px !default;
+	$x-loading-semicircle-border-top-left-radius: 100px !default;
+	$x-loading-semicircle-border-bottom-left-radius: 100px !default;
+	$x-loading-semicircle-border-bottom-right-radiu: 100px !default;
+	$x-loading-semicircle-border-style: solid !default;
+	$x-loading-circle-border-top-right-radius: 100px !default;
+	$x-loading-circle-border-top-left-radius: 100px !default;
+	$x-loading-circle-border-bottom-left-radius: 100px !default;
+	$x-loading-circle-border-bottom-right-radiu: 100px !default;
+	$x-loading-circle-border-width:2px !default;
+	$x-loading-circle-border-top-color:#e5e5e5 !default;
+	$x-loading-circle-border-right-color:$x-loading-circle-border-top-color !default;
+	$x-loading-circle-border-bottom-color:$x-loading-circle-border-top-color !default;
+	$x-loading-circle-border-left-color:$x-loading-circle-border-top-color !default;
+	$x-loading-circle-border-style:solid !default;
+	$x-loading-icon-host-font-size:0px !default;
+	$x-loading-icon-host-line-height:1 !default;
+	$x-loading-icon-vertical-margin:6px 0 0 !default;
+	$x-loading-icon-dot-top:0 !default;
+	$x-loading-icon-dot-left:0 !default;
+	$x-loading-icon-dot-width:100% !default;
+	$x-loading-icon-dot-height:100% !default;
+	$x-loading-icon-dot-before-width:2px !default;
+	$x-loading-icon-dot-before-height:25% !default;
+	$x-loading-icon-dot-before-margin:0 auto !default;
+	$x-loading-icon-dot-before-background-color: #ffffff !default;
+	$x-loading-icon-dot-before-border-radius:8px !default;
+
+	.x-loading-icon {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+		// color: $x-loading-icon-color;
+
+		&__text {
+			margin-left: $x-loading-icon-text-margin-left;
+			color: $x-loading-icon-text-color;
+			font-size: $x-loading-icon-text-font-size;
+			line-height: $x-loading-icon-text-line-height;
+		}
+
+		&__spinner {
+			width: $x-loading-width;
+			height: $x-loading-height;
+			position: relative;
+			box-sizing: border-box;
+			// max-width: $x-loading-max-width;
+			// max-height: $x-loading-max-height;
+			// animation: x-rotate 1s linear infinite;
+		}
+
+		&__spinner--semicircle {
+			border-width: $x-loading-semicircle-border-width;
+			border-color: $x-loading-semicircle-border-color;
+			border-top-right-radius: $x-loading-semicircle-border-top-right-radius;
+			border-top-left-radius: $x-loading-semicircle-border-top-left-radius;
+			border-bottom-left-radius: $x-loading-semicircle-border-bottom-left-radius;
+			border-bottom-right-radius: $x-loading-semicircle-border-bottom-right-radiu;
+			border-style: $x-loading-semicircle-border-style;
+		}
+
+		&__spinner--circle {
+			border-top-right-radius: $x-loading-circle-border-top-right-radius;
+			border-top-left-radius: $x-loading-circle-border-top-left-radius;
+			border-bottom-left-radius: $x-loading-circle-border-bottom-left-radius;
+			border-bottom-right-radius: $x-loading-circle-border-bottom-right-radiu;
+			border-width: $x-loading-circle-border-width;
+			border-top-color: $x-loading-circle-border-top-color;
+			border-right-color: $x-loading-circle-border-right-color;
+			border-bottom-color: $x-loading-circle-border-bottom-color;
+			border-left-color: $x-loading-circle-border-left-color;
+			border-style: $x-loading-circle-border-style;
+		}
+
+		&--vertical {
+			flex-direction: column
+		}
+	}
+
+	// :host {
+	// 	font-size: $x-loading-icon-host-font-size;
+	// 	line-height: $x-loading-icon-host-line-height;
+	// }
+
+	.x-loading-icon__spinner--spinner {
+			// todo2026 wait uni-app-x
+			// #ifndef APP
+			animation-timing-function: steps(12)
+			// #endif
+	}
+
+	.x-loading-icon__text-vertical {
+		margin: $x-loading-icon-vertical-margin;
+		color: $x-content-color;
+	}
+
+	.x-loading-icon__dot {
+			position: absolute;
+			// top: $x-loading-icon-dot-top;
+			// left: $x-loading-icon-dot-left;
+			width: $x-loading-icon-dot-width;
+			height: $x-loading-icon-dot-height;
+
+			//&:before {
+				width: $x-loading-icon-dot-before-width;
+				height: $x-loading-icon-dot-before-height;
+				// margin: $x-loading-icon-dot-before-margin;
+				background-color: $x-loading-icon-dot-before-background-color;
+				border-radius: $x-loading-icon-dot-before-border-radius;
+			//}
+	}
+
+	$radius: v-bind(size)px;
+	@for $i from 1 through 12 {
+		// .x-loading-icon__dot:nth-of-type(#{$i}) {
+		// 	transform: rotate(($i + 2) * 30deg);
+		// 	opacity: 1 - 0.0625 * ($i - 1);
+		// }
+	}
+
+	// todo2026 wait uni-app-x
+	// #ifndef APP
+	@keyframes x-rotate {
+		0% {
+			transform: rotate(0deg)
+		}
+	
+		to {
+			transform: rotate(1turn)
+		}
+	}
+	// #endif
+</style>

@@ -1,0 +1,399 @@
+import { http } from '../src/http'
+import type { HttpRequestConfig } from '../src/http/request/types'
+import { CONTENT_TYPE_FORM_URLENCODED, CONTENT_TYPE_JSON } from '../src/http/tools/enum'
+
+export class FileData {
+  originalFileData: any
+  options: any | null
+
+  constructor(originalFileData: any, options: any | null = null) {
+    this.originalFileData = originalFileData
+    this.options = options
+  }
+
+  getOriginalFileData(): any {
+    return this.originalFileData
+  }
+
+  getOptions(): any | null {
+    return this.options
+  }
+}
+
+export type RequestOptions = {
+  server?: string
+  toast?: boolean
+  ignoreAuth?: boolean
+  domain?: string
+}
+
+export type RequestOptionsWithExtra = UTSJSONObject
+
+export type YapiRequestConfig = {
+  mockUrl: string
+  devUrl: string
+  prodUrl: string
+  path: string
+  method: string
+  requestHeaders: any | null
+  requestBodyType: string
+  responseBodyType: string
+  dataKey: any | null
+  paramNames: Array<string>
+  queryNames: Array<string>
+  requestDataOptional: boolean
+  requestDataJsonSchema: any | null
+  responseDataJsonSchema: any | null
+  requestFunctionName: string
+  queryStringArrayFormat: string
+  extraInfo: any | null
+}
+
+export type YapiRequestPayload = {
+  mockUrl: string
+  devUrl: string
+  prodUrl: string
+  path: string
+  method: string
+  requestHeaders: any | null
+  requestBodyType: string
+  responseBodyType: string
+  dataKey: any | null
+  paramNames: Array<string>
+  queryNames: Array<string>
+  requestDataOptional: boolean
+  requestDataJsonSchema: any | null
+  responseDataJsonSchema: any | null
+  requestFunctionName: string
+  queryStringArrayFormat: string
+  extraInfo: any | null
+  rawData: any | null
+  data: any | null
+  hasFileData: boolean
+  fileData: UTSJSONObject | null
+  allData: any | null
+}
+
+function parseJsonObject(value: any | null): UTSJSONObject | null {
+  if (value == null) {
+    return null
+  }
+  try {
+    return JSON.parseObject(JSON.stringify(value))
+  }
+  catch (error) {
+    return null
+  }
+}
+
+function isFileDataLike(value: any | null): boolean {
+  const obj = parseJsonObject(value)
+  if (obj == null) {
+    return false
+  }
+  return obj['originalFileData'] != null
+}
+
+function getOriginalFileValue(value: any | null): any | null {
+  const obj = parseJsonObject(value)
+  if (obj == null) {
+    return null
+  }
+  return obj['originalFileData']
+}
+
+function stringifyQueryValue(key: string, value: any, arrayFormat: string): string {
+  if (!Array.isArray(value)) {
+    return `${encodeURIComponent(key)}=${encodeURIComponent(value.toString())}`
+  }
+
+  const valueList = value as Array<any>
+  if (arrayFormat == 'indices') {
+    return valueList.map((item, index) => `${encodeURIComponent(`${key}[${index}]`)}=${encodeURIComponent(item.toString())}`).join('&')
+  }
+  if (arrayFormat == 'repeat') {
+    return valueList.map(item => `${encodeURIComponent(key)}=${encodeURIComponent(item.toString())}`).join('&')
+  }
+  if (arrayFormat == 'comma') {
+    return `${encodeURIComponent(key)}=${encodeURIComponent(valueList.map(item => item.toString()).join(','))}`
+  }
+  if (arrayFormat == 'json') {
+    return `${encodeURIComponent(key)}=${encodeURIComponent(JSON.stringify(valueList))}`
+  }
+  return valueList.map(item => `${encodeURIComponent(`${key}[]`)}=${encodeURIComponent(item.toString())}`).join('&')
+}
+
+function replacePathParameter(path: string, key: string, value: any): string {
+  const nextValue = value.toString()
+  return path
+    .split(`{${key}}`).join(nextValue)
+    .split(`/:${key}`).join(`/${nextValue}`)
+}
+
+function buildExtraOptions(options: RequestOptionsWithExtra | null, baseUrl: string): UTSJSONObject {
+  const extra = {} as UTSJSONObject
+  const optionObject = parseJsonObject(options)
+  if (optionObject != null) {
+    const keys = UTSJSONObject.keys(optionObject)
+    for (const key of keys) {
+      if (key == 'server') {
+        continue
+      }
+      extra[key] = optionObject[key]
+    }
+  }
+  if (baseUrl != '') {
+    extra['domain'] = baseUrl
+  }
+  return extra
+}
+
+function buildHeaders(payload: YapiRequestPayload): UTSJSONObject {
+  const header = parseJsonObject(payload.requestHeaders) ?? ({} as UTSJSONObject)
+  if (header['Accept'] == null) {
+    header['Accept'] = 'application/json, text/plain, */*'
+  }
+  if (!payload.hasFileData) {
+    if (payload.requestBodyType == 'json') {
+      header['Content-Type'] = header['Content-Type'] ?? CONTENT_TYPE_JSON
+    }
+    else if (payload.requestBodyType == 'form') {
+      header['Content-Type'] = header['Content-Type'] ?? CONTENT_TYPE_FORM_URLENCODED
+    }
+  }
+  return header
+}
+
+type ParsedRequestData = {
+  data: any | null
+  fileData: UTSJSONObject | null
+  hasFileData: boolean
+}
+
+
+function parseRequestData(requestData: any | null): ParsedRequestData {
+  if (requestData == null) {
+    return {
+      data: null,
+      fileData: null,
+      hasFileData: false,
+    }
+  }
+
+  if (Array.isArray(requestData) || typeof requestData != 'object') {
+    return {
+      data: requestData,
+      fileData: null,
+      hasFileData: false,
+    }
+  }
+
+  const requestObject = parseJsonObject(requestData)
+  if (requestObject == null) {
+    return {
+      data: requestData,
+      fileData: null,
+      hasFileData: false,
+    }
+  }
+
+  const data = {} as UTSJSONObject
+  const fileData = {} as UTSJSONObject
+  let hasFileData = false
+  const keys = UTSJSONObject.keys(requestObject)
+  for (const key of keys) {
+    const value = requestObject[key]
+    if (isFileDataLike(value)) {
+      const originalFileValue = getOriginalFileValue(value)
+      if (originalFileValue != null) {
+        fileData[key] = originalFileValue
+        hasFileData = true
+      }
+    }
+    else {
+      data[key] = value
+    }
+  }
+
+  return {
+    data,
+    fileData: hasFileData ? fileData : null,
+    hasFileData,
+  }
+}
+
+export function prepareRequest(requestConfig: YapiRequestConfig, requestData: any | null): YapiRequestPayload {
+  const parsed = parseRequestData(requestData)
+  let requestPath = requestConfig.path
+  let data = parsed.data
+  const dataObject = parseJsonObject(data)
+
+  if (dataObject != null) {
+    const nextData = {} as UTSJSONObject
+    const queryParts: Array<string> = []
+    const keys = UTSJSONObject.keys(dataObject)
+    for (const key of keys) {
+      const value = dataObject[key]
+      if (requestConfig.paramNames.indexOf(key) >= 0) {
+        if (value != null) {
+          requestPath = replacePathParameter(requestPath, key, value)
+        }
+        continue
+      }
+      if (requestConfig.queryNames.indexOf(key) >= 0) {
+        if (value != null) {
+          queryParts.push(stringifyQueryValue(key, value, requestConfig.queryStringArrayFormat))
+        }
+        continue
+      }
+      nextData[key] = value
+    }
+    if (queryParts.length > 0) {
+      requestPath = `${requestPath}${requestPath.indexOf('?') >= 0 ? '&' : '?'}${queryParts.join('&')}`
+    }
+    data = nextData
+  }
+
+  const allData = parseJsonObject(data) ?? data
+  return {
+    mockUrl: requestConfig.mockUrl,
+    devUrl: requestConfig.devUrl,
+    prodUrl: requestConfig.prodUrl,
+    path: requestPath,
+    method: requestConfig.method,
+    requestHeaders: requestConfig.requestHeaders,
+    requestBodyType: requestConfig.requestBodyType,
+    responseBodyType: requestConfig.responseBodyType,
+    dataKey: requestConfig.dataKey,
+    paramNames: requestConfig.paramNames,
+    queryNames: requestConfig.queryNames,
+    requestDataOptional: requestConfig.requestDataOptional,
+    requestDataJsonSchema: requestConfig.requestDataJsonSchema,
+    responseDataJsonSchema: requestConfig.responseDataJsonSchema,
+    requestFunctionName: requestConfig.requestFunctionName,
+    queryStringArrayFormat: requestConfig.queryStringArrayFormat,
+    extraInfo: requestConfig.extraInfo,
+    rawData: requestData,
+    data,
+    hasFileData: parsed.hasFileData,
+    fileData: parsed.fileData,
+    allData,
+  }
+}
+
+function pickBaseUrl(payload: YapiRequestPayload, options: RequestOptionsWithExtra | null): string {
+  const optionObject = parseJsonObject(options)
+  const customDomain = optionObject?.['domain']
+  if (customDomain != null && customDomain.toString() != '') {
+    return customDomain.toString()
+  }
+
+  const server = optionObject?.['server']?.toString() ?? 'dev'
+  if (server == 'mock') {
+    return payload.mockUrl
+  }
+  if (server == 'prod') {
+    return payload.prodUrl
+  }
+  return payload.devUrl
+}
+
+function resolveUploadFilePath(fileValue: any | null, payload: YapiRequestPayload): string {
+  if (fileValue == null) {
+    return ''
+  }
+  if (typeof fileValue == 'string') {
+    return fileValue as string
+  }
+  const fileObject = parseJsonObject(fileValue)
+  if (fileObject == null) {
+    return ''
+  }
+  const candidateKeys = ['filePath', 'tempFilePath', 'path', 'uri']
+  for (const key of candidateKeys) {
+    const candidate = fileObject[key]
+    if (candidate != null && candidate.toString() != '') {
+      return candidate.toString()
+    }
+  }
+  const dataObject = parseJsonObject(payload.data)
+  const dataFilePath = dataObject?.['filePath']
+  if (dataFilePath != null) {
+    return dataFilePath.toString()
+  }
+  return ''
+}
+
+function requestUpload<TResponseData>(payload: YapiRequestPayload, options: RequestOptionsWithExtra | null, baseUrl: string): Promise<TResponseData> {
+  const fileData = payload.fileData
+  if (fileData == null) {
+    throw new Error('上传请求缺少文件数据')
+  }
+
+  const fileKeys = UTSJSONObject.keys(fileData)
+  if (fileKeys.length == 0) {
+    throw new Error('上传请求缺少文件字段')
+  }
+
+  const fileFieldName = fileKeys[0]
+  const fileValue = fileData[fileFieldName]
+  const config: HttpRequestConfig = {
+    header: buildHeaders(payload),
+    extra: buildExtraOptions(options, baseUrl),
+    formData: parseJsonObject(payload.data) ?? ({} as UTSJSONObject),
+    name: fileFieldName,
+  }
+
+  if (Array.isArray(fileValue)) {
+    config.files = fileValue as Array<UploadFileOptionFiles>
+  }
+  else {
+    const filePath = resolveUploadFilePath(fileValue, payload)
+    if (filePath == '') {
+      throw new Error(`上传请求[${payload.requestFunctionName}]缺少可用的 filePath`)
+    }
+    config.filePath = filePath
+  }
+
+  if (baseUrl != '') {
+    config.baseURL = baseUrl
+  }
+
+  return http.Upload<any>(payload.path, config) as Promise<TResponseData>
+}
+
+export default function request<TResponseData>(payload: YapiRequestPayload, options: RequestOptionsWithExtra | null = null): Promise<TResponseData> {
+  const baseUrl = pickBaseUrl(payload, options)
+  if (payload.hasFileData || payload.requestBodyType == 'file') {
+    return requestUpload<TResponseData>(payload, options, baseUrl)
+  }
+
+  const method = payload.method.toUpperCase()
+  const data = payload.data
+  const config: HttpRequestConfig = {
+    header: buildHeaders(payload),
+    extra: buildExtraOptions(options, baseUrl),
+  }
+
+  if (baseUrl != '') {
+    config.baseURL = baseUrl
+  }
+
+  switch (method) {
+    case 'GET':
+      return http.Get<any>(payload.path, config) as Promise<TResponseData>
+    case 'HEAD':
+      return http.Head<any>(payload.path, config) as Promise<TResponseData>
+    case 'OPTIONS':
+      return http.Options<any>(payload.path, data, config) as Promise<TResponseData>
+    case 'DELETE':
+      return http.Delete<any>(payload.path, data, config) as Promise<TResponseData>
+    case 'PUT':
+      return http.Put<any>(payload.path, data, config) as Promise<TResponseData>
+    case 'PATCH':
+      return http.Patch<any>(payload.path, data, config) as Promise<TResponseData>
+    case 'POST':
+    default:
+      return http.Post<any>(payload.path, data, config) as Promise<TResponseData>
+  }
+}

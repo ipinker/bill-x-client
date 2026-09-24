@@ -1,0 +1,1 @@
+export { default as XkConfigProvider } from './x-config-provider.uvue'

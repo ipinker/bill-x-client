@@ -1,0 +1,154 @@
+<script setup lang="uts">
+import { computed, onMounted, ref, watch } from 'vue'
+import { setGlobalXkConfig } from '../../tokens/globalConfig'
+import { buildCssVarsObject, mergeVars } from '../../tokens/utils'
+import { getBaseVars } from '../../tokens/presets'
+import { setI18nConfig } from '../../libs/i18n/index.uts'
+import { applyNativeThemeUIDeferred } from '../../theme/runtime'
+
+const props = defineProps({
+  theme: {
+    type: String,
+    default: 'light',
+  },
+  themeVars: {
+    type: Object,
+    default: null,
+  },
+  locale: {
+    type: String,
+    default: '',
+  },
+  messages: {
+    type: Object,
+    default: null,
+  },
+})
+
+const systemTheme = ref('light')
+
+const themeMode = computed(() : string => {
+  return props.theme != '' ? props.theme : 'light'
+})
+
+const resolvedTheme = computed(() : string => {
+  if (themeMode.value == 'auto') {
+    return systemTheme.value
+  }
+  return themeMode.value
+})
+
+const resolvedVars = computed(() : UTSJSONObject => {
+  return mergeVars(getBaseVars(resolvedTheme.value), props.themeVars as UTSJSONObject)
+})
+
+const cssVarsObject = computed(() : UTSJSONObject => {
+  return buildCssVarsObject(resolvedVars.value)
+})
+
+const propThemeVars = computed(() : any | null => props.themeVars)
+const propLocale = computed(() : string => props.locale)
+const propMessages = computed(() : any | null => props.messages)
+
+function syncRuntimeTheme() : void {
+  // #ifdef H5
+  const uniRuntime = uni as UTSJSONObject
+  const runtimeX = uniRuntime['$x'] != null ? uniRuntime['$x'] as UTSJSONObject : {} as UTSJSONObject
+  runtimeX['theme'] = resolvedTheme.value
+  runtimeX['themeMode'] = themeMode.value
+  runtimeX['resolvedTheme'] = resolvedTheme.value
+  runtimeX['vars'] = resolvedVars.value
+  runtimeX['themeVars'] = cssVarsObject.value
+  uniRuntime['$x'] = runtimeX
+  // #endif
+}
+
+function syncSystemTheme() : void {
+  try {
+    const info = JSON.parseObject(JSON.stringify(uni.getSystemInfoSync()))
+    if (info != null && info['appTheme'] != null && info['appTheme'] == 'dark') {
+      systemTheme.value = 'dark'
+      return
+    }
+    if (info != null && info['osTheme'] != null && info['osTheme'] == 'dark') {
+      systemTheme.value = 'dark'
+      return
+    }
+    if (info != null && info['theme'] != null && info['theme'] == 'dark') {
+      systemTheme.value = 'dark'
+      return
+    }
+  }
+  catch (e) {
+    // ignore
+  }
+  systemTheme.value = 'light'
+}
+
+function applyConfig() : void {
+  setGlobalXkConfig({
+    theme: resolvedTheme.value,
+    themeMode: themeMode.value,
+    locale: props.locale,
+    messages: props.messages,
+    themeVars: props.themeVars,
+  } as UTSJSONObject)
+  setI18nConfig({
+    locale: props.locale,
+    messages: props.messages,
+  } as UTSJSONObject)
+  syncRuntimeTheme()
+  applyNativeThemeUIDeferred({
+    theme: resolvedTheme.value,
+    themeMode: themeMode.value,
+    resolvedTheme: resolvedTheme.value,
+    vars: resolvedVars.value,
+    themeVars: cssVarsObject.value,
+  } as UTSJSONObject)
+}
+
+watch(resolvedTheme, () => {
+  applyConfig()
+}, { immediate: true })
+
+watch(propThemeVars, () => {
+  applyConfig()
+}, { deep: true })
+
+watch(propLocale, () => {
+  applyConfig()
+})
+
+watch(propMessages, () => {
+  applyConfig()
+}, { deep: true })
+
+onMounted(() : void => {
+  syncSystemTheme()
+  // #ifdef H5
+  if (typeof uni.onThemeChange == 'function') {
+    uni.onThemeChange((result : UTSJSONObject) => {
+      systemTheme.value = result['theme'] == 'dark' ? 'dark' : 'light'
+    })
+  }
+  // #endif
+})
+</script>
+
+<template>
+  <view
+    class="xk-app-root"
+    :data-x-theme="resolvedTheme"
+    :data-x-theme-mode="themeMode"
+    :style="cssVarsObject"
+  >
+    <slot />
+  </view>
+</template>
+
+<style lang="scss">
+.xk-app-root {
+  background-color: var(--x-bg);
+  height: 100%;
+}
+</style>

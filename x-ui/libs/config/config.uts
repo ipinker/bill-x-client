@@ -1,0 +1,46 @@
+const win = uni.getSystemInfoSync()
+const statusBarHeight = win.statusBarHeight != null ? win.statusBarHeight : 0
+const safeAreaInsets = win.safeAreaInsets
+const safeAreaBottom = safeAreaInsets != null
+  ? safeAreaInsets.bottom
+  : (win.safeArea != null ? win.windowHeight - win.safeArea.bottom : 0)
+
+export default {
+  v: 'x',
+  version: 'x',
+  navBarHeight: '44px',
+  statusBarHeight: `${statusBarHeight}px`,
+  safeBarHeight: safeAreaBottom > 0 ? `${safeAreaBottom}px` : '0px',
+  navbarHeightMax: `${statusBarHeight + 44}px`,
+  radiusBase: 10,
+  type: [
+    'primary',
+    'success',
+    'info',
+    'error',
+    'warning',
+  ],
+  color: {
+    'x-primary': 'var(--x-primary, #7157ff)',
+    'x-warning': 'var(--x-warning, #ff976a)',
+    'x-success': 'var(--x-success, #07c160)',
+    'x-error': 'var(--x-error, #ee0a24)',
+    'x-info': 'var(--x-info, #909399)',
+    'x-main-color': 'var(--x-text-1, #303051)',
+    'x-content-color': 'var(--x-text-2, #6E6E84)',
+    'x-tips-color': 'var(--x-text-3, #9B9BAF)',
+    'x-light-color': 'var(--x-text-4, #CBCCDD)',
+  },
+  iconUrl: 'https://at.alicdn.com/t/font_2225171_8kdcwk4po24.ttf',
+  customIcon: {
+    family: '',
+    url: '',
+  },
+  customIcons: {},
+  unit: 'px',
+  nativeThemeSync: false,
+  interceptor: {
+    navbarLeftClick: null,
+  },
+  loadFontOnce: false,
+} as UTSJSONObject

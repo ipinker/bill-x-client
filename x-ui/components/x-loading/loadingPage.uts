@@ -1,0 +1,24 @@
+/*
+ * @Author       : jry
+ * @Description  :
+ * @version      : 4.0
+ * @Date         : 2024-08-28 15:15:21
+ * @LastAuthor   : jry
+ * @lastTime     : 2024-08-28 15:20:50
+ * @FilePath     : /uview-ultra/libs/config/props/loadingPage
+ */
+export default {
+    // loading-page组件
+    loadingPage: {
+        loadingText: '',
+        image: '',
+        loadingMode: 'circle',
+        loading: false,
+        bgColor: 'var(--x-overlay-color, rgba(0, 0, 0, 0.5))',
+        color: 'var(--x-text-4, #CBCCDD)',
+        fontSize: 19,
+        iconSize: 28,
+        loadingColor: 'var(--x-text-4, #CBCCDD)',
+        zIndex: 1000
+    }
+} as UTSJSONObject

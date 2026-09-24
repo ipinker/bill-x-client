@@ -1,0 +1,350 @@
+<template>
+  <view v-if="show" class="x-modal-mask" @tap="handleOverlayTap">
+    <view :class="design ? 'x-modal-panel x-modal-panel-design' : 'x-modal-panel'" :style="panelStyle" @tap.stop="handlePanelTap">
+      <image v-if="icon != ''" :class="design ? 'x-modal-icon x-modal-icon-design' : 'x-modal-icon'" :src="icon" mode="aspectFit" />
+      <text v-if="title != ''" :class="titleClass">{{ title }}</text>
+      <view :class="design ? 'x-modal-content-wrap x-modal-content-wrap-design' : 'x-modal-content-wrap'">
+        <slot>
+          <text v-if="content != ''" :class="design ? 'x-modal-content x-modal-content-design' : 'x-modal-content'" :style="contentStyle">{{ content }}</text>
+        </slot>
+      </view>
+      <view v-if="showCancelButton || showConfirmButton" :class="design ? 'x-modal-actions x-modal-actions-design' : 'x-modal-actions'">
+        <view v-if="showCancelButton" :class="cancelButtonClass" @tap="handleCancel">
+          <text :class="design ? 'x-modal-btn-text x-modal-btn-text-design x-modal-btn-text-cancel' : 'x-modal-btn-text x-modal-btn-text-cancel'" :style="cancelTextStyle">{{ cancelText }}</text>
+        </view>
+        <view v-if="showConfirmButton" :class="confirmButtonClass" :style="confirmButtonStyle" @tap="handleConfirm">
+          <text :class="design ? 'x-modal-btn-text x-modal-btn-text-design x-modal-btn-text-confirm' : 'x-modal-btn-text x-modal-btn-text-confirm'">{{ confirmText }}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script setup lang="uts">
+import { computed } from 'vue'
+
+const props = defineProps({
+  show: {
+    type: Boolean,
+    default: false,
+  },
+  title: {
+    type: String,
+    default: '',
+  },
+  content: {
+    type: String,
+    default: '',
+  },
+  confirmText: {
+    type: String,
+    default: '确定',
+  },
+  cancelText: {
+    type: String,
+    default: '取消',
+  },
+  showCancelButton: {
+    type: Boolean,
+    default: false,
+  },
+  showConfirmButton: {
+    type: Boolean,
+    default: true,
+  },
+  confirmColor: {
+    type: String,
+    default: '#2979ff',
+  },
+  cancelColor: {
+    type: String,
+    default: '#606266',
+  },
+  width: {
+    type: [String, Number],
+    default: '650rpx',
+  },
+  contentTextAlign: {
+    type: String,
+    default: 'left',
+  },
+  icon: {
+    type: String,
+    default: '',
+  },
+  closeOnClickOverlay: {
+    type: Boolean,
+    default: false,
+  },
+  design: {
+    type: Boolean,
+    default: false,
+  },
+})
+
+const emit = defineEmits(['confirm', 'cancel', 'close', 'update:show'])
+
+const panelStyle = computed(() : UTSJSONObject => {
+  const panelWidth = typeof props.width == 'number' ? `${props.width}px` : props.width.toString()
+  return {
+    width: props.design ? '309px' : panelWidth,
+  } as UTSJSONObject
+})
+
+const titleClass = computed(() : string => {
+  if (!props.design) {
+    return 'x-modal-title'
+  }
+  return props.icon != ''
+    ? 'x-modal-title x-modal-title-design x-modal-title-with-icon'
+    : 'x-modal-title x-modal-title-design'
+})
+
+const contentStyle = computed(() : UTSJSONObject => {
+  return {
+    textAlign: props.design ? 'center' : props.contentTextAlign,
+  } as UTSJSONObject
+})
+
+const cancelTextStyle = computed(() : UTSJSONObject => {
+  return {
+    color: props.design ? '#303051' : props.cancelColor,
+  } as UTSJSONObject
+})
+
+const confirmButtonStyle = computed(() : UTSJSONObject => {
+  if (props.design) {
+    return {} as UTSJSONObject
+  }
+  return {
+    backgroundColor: props.confirmColor,
+  } as UTSJSONObject
+})
+
+const cancelButtonClass = computed(() : string => {
+  if (props.design) {
+    return props.showConfirmButton
+      ? 'x-modal-btn x-modal-btn-cancel x-modal-btn-cancel-design'
+      : 'x-modal-btn x-modal-btn-cancel x-modal-btn-single-design'
+  }
+  return props.showConfirmButton
+    ? 'x-modal-btn x-modal-btn-cancel'
+    : 'x-modal-btn x-modal-btn-cancel x-modal-btn-last'
+})
+
+const confirmButtonClass = computed(() : string => {
+  if (props.design) {
+    return props.showCancelButton
+      ? 'x-modal-btn x-modal-btn-confirm x-modal-btn-confirm-design x-modal-btn-confirm-with-cancel'
+      : 'x-modal-btn x-modal-btn-confirm x-modal-btn-confirm-design'
+  }
+  return 'x-modal-btn x-modal-btn-confirm'
+})
+
+function handleConfirm() : void {
+  emit('update:show', false)
+  emit('confirm')
+}
+
+function handleCancel() : void {
+  emit('update:show', false)
+  emit('cancel')
+}
+
+function handleOverlayTap() : void {
+  if (props.closeOnClickOverlay) {
+    emit('update:show', false)
+    emit('close')
+  }
+}
+
+function handlePanelTap() : void {
+}
+</script>
+
+<style scoped>
+.x-modal-mask {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1001;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.x-modal-panel {
+  border-radius: 31rpx;
+  background-color: #ffffff;
+  overflow: hidden;
+}
+
+.x-modal-panel-design {
+  padding-bottom: 24px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.x-modal-icon {
+  width: 88rpx;
+  height: 88rpx;
+  margin-top: 48rpx;
+}
+
+.x-modal-icon-design {
+  width: 44px;
+  height: 44px;
+  margin-top: 24px;
+}
+
+.x-modal-title {
+  padding-top: 31rpx;
+  padding-left: 40rpx;
+  padding-right: 40rpx;
+  font-size: 35rpx;
+  font-weight: 600;
+  line-height: 46rpx;
+  text-align: center;
+  color: #303051;
+}
+
+.x-modal-title-design {
+  width: 254px;
+  margin-top: 24px;
+  padding-top: 0;
+  padding-left: 0;
+  padding-right: 0;
+  font-family: "PingFang HK", "PingFang SC";
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 24px;
+  text-align: center;
+  color: #030a2c;
+}
+
+.x-modal-title-with-icon {
+  margin-top: 8px;
+}
+
+.x-modal-content-wrap {
+  padding: 24rpx 46rpx 16rpx 46rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.x-modal-content-wrap-design {
+  width: 254px;
+  padding: 0;
+  align-items: center;
+}
+
+.x-modal-content {
+  font-size: 29rpx;
+  line-height: 46rpx;
+  color: #303051;
+}
+
+.x-modal-content-design {
+  width: 254px;
+  margin-top: 12px;
+  font-family: "PingFang HK", "PingFang SC";
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 24px;
+  color: #6e6e84;
+}
+
+.x-modal-actions {
+  padding: 46rpx;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+
+.x-modal-actions-design {
+  width: 259px;
+  margin-top: 26px;
+  padding: 0;
+}
+
+.x-modal-btn {
+  flex: 1;
+  height: 92rpx;
+  border-radius: 96rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+
+.x-modal-btn-cancel {
+  margin-right: 25rpx;
+  background-color: var(--x-bg-color, #f3f4f6);
+}
+
+.x-modal-btn-cancel-design {
+  flex: none;
+  width: 126px;
+  height: 48px;
+  margin-right: 0;
+  border-radius: 24px;
+  background-color: #f6f6f6;
+}
+
+.x-modal-btn-last {
+  margin-right: 0;
+}
+
+.x-modal-btn-single-design {
+  flex: none;
+  width: 259px;
+  height: 48px;
+  margin-right: 0;
+  border-radius: 24px;
+  background-color: #f6f6f6;
+}
+
+.x-modal-btn-confirm {
+  background-color: #2979ff;
+}
+
+.x-modal-btn-confirm-design {
+  flex: none;
+  width: 259px;
+  height: 48px;
+  border-radius: 24px;
+  background-color: var(--x-primary, #7157ff);
+}
+
+.x-modal-btn-confirm-with-cancel {
+  width: 126px;
+  margin-left: 7px;
+}
+
+.x-modal-btn-text {
+  font-size: 31rpx;
+  font-weight: 500;
+  color: #ffffff;
+}
+
+.x-modal-btn-text-design {
+  font-family: "Source Han Sans CN", "PingFang HK", "PingFang SC";
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.x-modal-btn-text-cancel {
+  color: #606266;
+}
+
+.x-modal-btn-text-confirm {
+  color: #ffffff;
+}
+</style>

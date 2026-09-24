@@ -1,0 +1,11 @@
+{
+  "title": "demo",
+  "description": "This web application offers streamlined data filtering for users, focusing on a modern dark-themed interface that enhances usability and design aesthetics.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

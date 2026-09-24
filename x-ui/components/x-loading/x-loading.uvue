@@ -1,0 +1,216 @@
+<template>
+    <view
+        v-if="visibleLoading"
+        class="x-loading-overlay"
+        :style="overlayStyle"
+    >
+        <view class="x-loading-page">
+            <view class="x-loading-page__warpper">
+                <view class="x-loading-page__warpper__loading-icon">
+                    <image
+                        v-if="image"
+                        :src="image"
+                        class="x-loading-page__warpper__loading-icon__img"
+                        mode="aspectFit"
+						:style="{
+							width: addUnit(iconSize),
+						    height: addUnit(iconSize)
+						}"
+                    ></image>
+                    <x-loading-icon
+                        v-else
+                        :mode="loadingMode"
+                        :size="addUnit(iconSize)"
+                        :color="loadingColor"
+                    ></x-loading-icon>
+                </view>
+                <slot>
+                    <text
+                        class="x-loading-page__warpper__text"
+                        :style="{
+                            fontSize: addUnit(fontSize),
+                            color: color,
+                        }"
+                        >{{ displayText }}</text
+                    >
+                </slot>
+            </view>
+        </view>
+    </view>
+</template>
+
+<script setup lang="uts">
+import { computed, onUnmounted, ref } from 'vue'
+import { addUnit } from '../../libs/function/index'
+
+defineOptions({
+  name: 'x-loading',
+})
+
+const props = defineProps({
+  loadingText: {
+    type: [String, Number],
+    default: '正在加载',
+  },
+  image: {
+    type: String,
+    default: '',
+  },
+  loadingMode: {
+    type: String,
+    default: 'circle',
+  },
+  loading: {
+    type: Boolean,
+    default: false,
+  },
+  bgColor: {
+    type: String,
+    default: '#ffffff',
+  },
+  color: {
+    type: String,
+    default: '#C8C8C8',
+  },
+  fontSize: {
+    type: [String, Number],
+    default: 19,
+  },
+  iconSize: {
+    type: [String, Number],
+    default: 28,
+  },
+  loadingColor: {
+    type: String,
+    default: '#C8C8C8',
+  },
+  zIndex: {
+    type: [Number],
+    default: 10,
+  },
+  customStyle: {
+    type: Object,
+    default: () : UTSJSONObject => ({} as UTSJSONObject),
+  },
+  title: {
+    type: [String, Number],
+    default: '',
+  },
+})
+
+const internalLoading = ref<boolean>(false)
+const internalText = ref<string>('')
+const overlayTop = ref<string>('var(--statusbar-height, 0px)')
+const timer = ref<number>(0)
+
+const customStyleParse = computed(() : UTSJSONObject => {
+  return props.customStyle as UTSJSONObject
+})
+
+const overlayStyle = computed(() : UTSJSONObject => {
+  const style = {
+    top: overlayTop.value,
+    backgroundColor: props.bgColor,
+    zIndex: props.zIndex,
+  } as UTSJSONObject
+  const customStyle = customStyleParse.value
+  const keys = UTSJSONObject.keys(customStyle)
+  for (let index : number = 0; index < keys.length; index++) {
+    const key = keys[index]
+    style[key] = customStyle[key]
+  }
+  return style
+})
+
+const visibleLoading = computed(() : boolean => {
+  return props.loading || internalLoading.value
+})
+
+const displayText = computed(() : string => {
+  if (internalText.value != '') {
+    return internalText.value
+  }
+  if (props.title != '') {
+    return props.title.toString()
+  }
+  return props.loadingText != null ? props.loadingText.toString() : ''
+})
+
+function show(loadingText : string | null = null, cusNav : boolean = false) : void {
+  internalText.value = loadingText != null ? loadingText : displayText.value
+  overlayTop.value = cusNav
+    ? 'calc(var(--statusbar-height, 0px) + var(--navbar-height, 44px))'
+    : 'var(--statusbar-height, 0px)'
+  internalLoading.value = true
+  if (timer.value > 0) {
+    clearTimeout(timer.value)
+  }
+  timer.value = setTimeout(() => {
+    hide()
+  }, 60000)
+}
+
+function hide() : void {
+  internalLoading.value = false
+  if (timer.value > 0) {
+    clearTimeout(timer.value)
+    timer.value = 0
+  }
+}
+
+defineExpose({
+  show,
+  hide,
+})
+
+onUnmounted(() : void => {
+  hide()
+})
+</script>
+
+<style lang="scss" scoped>
+@import "../../libs/css/components.scss";
+
+$text-color: rgb(200, 200, 200) !default;
+$text-size: 19px !default;
+$x-loading-icon-margin-bottom: 10px !default;
+
+.x-loading-page {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+
+    &__warpper {
+        justify-content: center;
+        align-items: center;
+        // color: $text-color;
+        // font-size: $text-size;
+        display: flex;
+        flex-direction: column;
+        &__loading-icon {
+            margin-bottom: $x-loading-icon-margin-bottom;
+
+            &__img {
+                width: 40px;
+                height: 40px;
+            }
+        }
+
+        &__text {
+            font-size: $text-size;
+            color: $text-color;
+        }
+    }
+}
+
+.x-loading-overlay {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+}
+</style>

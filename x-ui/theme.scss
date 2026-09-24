@@ -1,0 +1,120 @@
+$x-main-color: var(--x-text-1, #303051);
+$x-content-color: var(--x-text-2, #6e6e84);
+$x-tips-color: var(--x-text-3, #9b9baf);
+$x-light-color: var(--x-text-4, #cbccdd);
+$x-border-color: var(--x-border, #d9d9d9);
+$x-bg-color: var(--x-bg, #f9fafe);
+$x-bg-container-color: var(--x-bg-container, #ffffff);
+$x-disabled-color: var(--x-disabled-color, rgba(203, 204, 221, 0.6));
+
+$x-primary: var(--x-primary, #7157ff);
+$x-primary-dark: var(--x-primary-7, #5a3fe6);
+$x-primary-disabled: var(--x-primary-3, #bdb0ff);
+$x-primary-light: var(--x-primary-light, #ddd8ff);
+
+$x-warning: var(--x-warning, #ff976a);
+$x-warning-dark: var(--x-warning-7, #e07248);
+$x-warning-disabled: var(--x-warning-3, #ffcfad);
+$x-warning-light: var(--x-warning-light, #ffe8d6);
+
+$x-success: var(--x-success, #07c160);
+$x-success-dark: var(--x-success-7, #059e50);
+$x-success-disabled: var(--x-success-3, #adf5d1);
+$x-success-light: var(--x-success-light, #d6fce9);
+
+$x-error: var(--x-error, #ee0a24);
+$x-error-dark: var(--x-error-dark, #c7001e);
+$x-error-disabled: var(--x-error-disabled, #ffa39e);
+$x-error-light: var(--x-error-light, #ffccc7);
+
+$x-info: var(--x-info, #909399);
+$x-info-dark: var(--x-info-7, #73767d);
+$x-info-disabled: var(--x-info-3, #d3d4d6);
+$x-info-light: var(--x-info-light, #e9e9eb);
+
+$x-overlay-background-color: var(--x-overlay-background-color, rgba(0, 0, 0, 0.7));
+
+$x-main-color: $x-main-color;
+$x-content-color: $x-content-color;
+$x-tips-color: $x-tips-color;
+$x-light-color: $x-light-color;
+$x-border-color: $x-border-color;
+$x-bg-color: $x-bg-color;
+$x-disabled-color: $x-disabled-color;
+
+$x-primary: $x-primary;
+$x-primary-dark: $x-primary-dark;
+$x-primary-disabled: $x-primary-disabled;
+$x-primary-light: $x-primary-light;
+
+$x-warning: $x-warning;
+$x-warning-dark: $x-warning-dark;
+$x-warning-disabled: $x-warning-disabled;
+$x-warning-light: $x-warning-light;
+
+$x-success: $x-success;
+$x-success-dark: $x-success-dark;
+$x-success-disabled: $x-success-disabled;
+$x-success-light: $x-success-light;
+
+$x-error: $x-error;
+$x-error-dark: $x-error-dark;
+$x-error-disabled: $x-error-disabled;
+$x-error-light: $x-error-light;
+
+$x-info: $x-info;
+$x-info-dark: $x-info-dark;
+$x-info-disabled: $x-info-disabled;
+$x-info-light: $x-info-light;
+
+$u-main-color: $x-main-color;
+$u-content-color: $x-content-color;
+$u-tips-color: $x-tips-color;
+$u-light-color: $x-light-color;
+$u-border-color: $x-border-color;
+$u-bg-color: $x-bg-color;
+$u-disabled-color: $x-disabled-color;
+
+$u-primary: $x-primary;
+$u-primary-dark: $x-primary-dark;
+$u-primary-disabled: $x-primary-disabled;
+$u-primary-light: $x-primary-light;
+
+$u-warning: $x-warning;
+$u-warning-dark: $x-warning-dark;
+$u-warning-disabled: $x-warning-disabled;
+$u-warning-light: $x-warning-light;
+
+$u-success: $x-success;
+$u-success-dark: $x-success-dark;
+$u-success-disabled: $x-success-disabled;
+$u-success-light: $x-success-light;
+
+$u-error: $x-error;
+$u-error-dark: $x-error-dark;
+$u-error-disabled: $x-error-disabled;
+$u-error-light: $x-error-light;
+
+$u-info: $x-info;
+$u-info-dark: $x-info-dark;
+$u-info-disabled: $x-info-disabled;
+$u-info-light: $x-info-light;
+
+$x-overlay-background-color: $x-overlay-background-color;
+$x-popx-content-background-color: var(--x-bg-container, #ffffff);
+$x-button-info-background-color: var(--x-button-info-background-color, var(--x-bg-container, #ffffff));
+$x-button-plain-background-color: var(--x-button-plain-background-color, var(--x-bg-container, #ffffff));
+$x-modal-border-radius: var(--x-radius-l, 12px);
+
+$x-toast-x-type-primary-color: var(--x-primary, #7157ff);
+$x-toast-x-type-primary-background-color: var(--x-primary-light, #ddd8ff);
+$x-toast-x-type-primary-border-color: var(--x-primary-3, #bdb0ff);
+$x-toast-x-type-success-color: var(--x-success, #07c160);
+$x-toast-x-type-success-background-color: var(--x-success-light, #d6fce9);
+$x-toast-x-type-success-border-color: var(--x-success-3, #adf5d1);
+$x-toast-x-type-error-color: var(--x-error, #ee0a24);
+$x-toast-x-type-error-background-color: var(--x-error-light, #ffccc7);
+$x-toast-x-type-error-border-color: var(--x-error-disabled, #ffa39e);
+$x-toast-x-type-warning-color: var(--x-warning, #ff976a);
+$x-toast-x-type-warning-background-color: var(--x-warning-light, #ffe8d6);
+$x-toast-x-type-warning-border-color: var(--x-warning-3, #ffcfad);

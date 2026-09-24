@@ -1,0 +1,79 @@
+<template>
+	<x-transition
+	    :show="show"
+	    custom-class="x-overlay"
+	    :duration="duration"
+	    :custom-style="overlayStyle"
+	    @click="clickHandler"
+	>
+		<slot />
+	</x-transition>
+</template>
+
+<script setup lang="uts">
+import { computed } from 'vue'
+import { addStyle, deepMerge } from '../../libs/function/index'
+
+defineOptions({
+  name: 'x-overlay',
+})
+
+const props = defineProps({
+  show: {
+    type: Boolean,
+    default: false,
+  },
+  zIndex: {
+    type: [String, Number],
+    default: 10070,
+  },
+  duration: {
+    type: [String, Number],
+    default: 300,
+  },
+  opacity: {
+    type: [String, Number],
+    default: 0.5,
+  },
+  customStyle: {
+    type: Object,
+    default: () : UTSJSONObject => ({} as UTSJSONObject),
+  },
+})
+
+const emit = defineEmits(['click'])
+
+const overlayStyle = computed(() : UTSJSONObject => {
+  const style = {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: props.zIndex,
+    'background-color': `rgba(0, 0, 0, ${props.opacity})`,
+  } as UTSJSONObject
+  return deepMerge(style, addStyle(props.customStyle))
+})
+
+function clickHandler() : void {
+  emit('click')
+}
+</script>
+
+<style lang="scss" scoped>
+	@import "../../libs/css/components.scss";
+     $x-overlay-top:0 !default;
+     $x-overlay-left:0 !default;
+     $x-overlay-width:100% !default;
+     $x-overlay-height:100% !default;
+     $x-overlay-background-color:rgba(0, 0, 0, .7) !default;
+	.x-overlay {
+		position: fixed;
+		top:$x-overlay-top;
+		left:$x-overlay-left;
+		width: $x-overlay-width;
+		height:$x-overlay-height;
+		background-color:$x-overlay-background-color;
+	}
+</style>

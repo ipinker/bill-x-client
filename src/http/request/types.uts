@@ -1,0 +1,9 @@
+export type HttpRequestConfig = {
+  baseURL?: string
+  header?: UTSJSONObject
+  extra?: UTSJSONObject
+  formData?: UTSJSONObject
+  name?: string
+  filePath?: string
+  files?: Array<any>
+}

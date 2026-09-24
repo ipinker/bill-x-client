@@ -1,0 +1,265 @@
+<template>
+  <view class="x-toast">
+    <x-overlay
+      :show="isShow"
+      :z-index="tmpConfig.zIndex"
+      :custom-style="overlayStyle"
+    >
+      <view
+        class="x-toast__content"
+        :style="[contentStyle]"
+        :class="[(tmpConfig.type === 'loading' || tmpConfig.loading as boolean) ? 'x-toast__content--loading' : 'x-toast__content--capsule']"
+      >
+        <x-loading-icon
+          v-if="tmpConfig.type === 'loading'"
+          mode="circle"
+          color="rgb(255, 255, 255)"
+          inactive-color="rgba(255, 255, 255, 0.3)"
+          size="36"
+        ></x-loading-icon>
+        <view
+          v-else-if="showDot"
+          class="x-toast__dot"
+          :style="{ backgroundColor: dotColor }"
+        ></view>
+        <x-icon
+          v-else-if="iconName != ''"
+          :name="iconName"
+          size="32"
+          color="#ffffff"
+          :custom-style="iconStyle"
+        ></x-icon>
+        <x-gap
+          v-if="tmpConfig.type === 'loading' || tmpConfig.loading as boolean"
+          height="16"
+          bg-color="transparent"
+        ></x-gap>
+        <text
+          class="x-toast__content__text"
+          :class="[(tmpConfig.type === 'loading' || tmpConfig.loading as boolean) ? 'x-toast__content__text--loading' : 'x-toast__content__text--capsule']"
+        >
+          {{ tmpConfig.message }}
+        </text>
+      </view>
+    </x-overlay>
+  </view>
+</template>
+
+<script setup lang="uts">
+import { computed, onUnmounted, ref } from 'vue'
+import { deepMerge, getWindowInfo, os, type2icon } from '../../libs/function/index'
+
+defineOptions({
+  name: 'x-toast',
+})
+
+const isShow = ref<boolean>(false)
+const timer = ref<number>(0)
+const config = {
+  message: '',
+  type: '',
+  zIndex: 10090,
+  duration: 2000,
+  icon: true,
+  position: 'center',
+  complete: null,
+  overlay: true,
+  loading: false,
+} as UTSJSONObject
+const tmpConfig = ref<UTSJSONObject>({
+  message: '',
+  type: '',
+  zIndex: 10090,
+  duration: 2000,
+  icon: true,
+  position: 'center',
+  complete: null,
+  overlay: true,
+  loading: false,
+} as UTSJSONObject)
+
+const iconName = computed(() : string => {
+  if (tmpConfig.value['icon'] == '' || tmpConfig.value['icon'] == 'none') {
+    return ''
+  }
+  if (tmpConfig.value['icon'] == true) {
+    const type = tmpConfig.value['type'] == null ? '' : tmpConfig.value['type'].toString()
+    if (['error', 'warning', 'success', 'primary'].includes(type)) {
+      return type2icon(type)
+    }
+    return ''
+  }
+  return tmpConfig.value['icon'] != null ? tmpConfig.value['icon'].toString() : ''
+})
+
+const showDot = computed(() : boolean => {
+  const type = tmpConfig.value['type'] == null ? '' : tmpConfig.value['type'].toString()
+  if (tmpConfig.value['loading'] as boolean || type == 'loading') {
+    return false
+  }
+  if (tmpConfig.value['icon'] == true || tmpConfig.value['icon'] == 'none' || tmpConfig.value['icon'] == '') {
+    return ['success', 'error', 'warning', 'primary'].includes(type)
+  }
+  return false
+})
+
+const dotColor = computed(() : string => {
+  const type = tmpConfig.value['type'] == null ? '' : tmpConfig.value['type'].toString()
+  if (type == 'success') {
+    return '#3BC580'
+  }
+  if (type == 'error') {
+    return '#ED5051'
+  }
+  if (type == 'warning') {
+    return '#F3C54C'
+  }
+  if (type == 'primary') {
+    return '#7157FF'
+  }
+  return '#FFFFFF'
+})
+
+const overlayStyle = computed(() : UTSJSONObject => {
+  const style = {
+    justifyContent: 'center',
+    alignItems: 'center',
+    display: 'flex',
+    backgroundColor: 'rgba(0, 0, 0, 0)',
+  } as UTSJSONObject
+  if (!(tmpConfig.value['overlay'] as boolean)) {
+    style['pointerEvents'] = 'none'
+  }
+  return style
+})
+
+const iconStyle = computed(() : UTSJSONObject => {
+  const style = {
+    marginBottom: '12rpx',
+  } as UTSJSONObject
+  if (os() === 'ios') {
+    style['marginTop'] = '-1px'
+  }
+  return style
+})
+
+const contentStyle = computed(() : UTSJSONObject => {
+  const windowHeight = getWindowInfo().windowHeight
+  let value = 0
+  if (tmpConfig.value['position'] === 'top') {
+    value = -windowHeight * 0.25
+  } else if (tmpConfig.value['position'] === 'bottom') {
+    value = windowHeight * 0.25
+  }
+  return {
+    transform: `translateY(${value}px)`,
+  } as UTSJSONObject
+})
+
+function primary(message : string) : void {
+  show({ type: 'primary', message } as UTSJSONObject)
+}
+
+function success(message : string) : void {
+  show({ type: 'success', message } as UTSJSONObject)
+}
+
+function error(message : string) : void {
+  show({ type: 'error', message } as UTSJSONObject)
+}
+
+function warning(message : string) : void {
+  show({ type: 'warning', message } as UTSJSONObject)
+}
+
+function clearTimer() : void {
+  isShow.value = false
+  clearTimeout(timer.value)
+  timer.value = 0
+}
+
+function hide() : void {
+  clearTimer()
+}
+
+function show(options : UTSJSONObject) : void {
+  tmpConfig.value = deepMerge(config, options) as UTSJSONObject
+  clearTimer()
+  isShow.value = true
+  if (tmpConfig.value['duration'] != -1) {
+    timer.value = setTimeout(() => {
+      clearTimer()
+      const complete = tmpConfig.value['complete']
+      if (typeof complete === 'function') {
+        ;(complete as () => void)()
+      }
+    }, tmpConfig.value['duration'] as number)
+  }
+}
+
+defineExpose({
+  primary,
+  success,
+  error,
+  warning,
+  show,
+  hide,
+})
+
+onUnmounted(() : void => {
+  hide()
+})
+</script>
+
+<style lang="scss" scoped>
+.x-toast {
+  &__content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    max-width: 680rpx;
+    background-color: rgba(28, 29, 33, 0.88);
+    box-sizing: border-box;
+    position: relative;
+    border-radius: 24rpx;
+
+    &--capsule {
+      flex-direction: row;
+      padding: 24rpx 38rpx;
+      min-height: 58rpx;
+    }
+
+    &--loading {
+      flex-direction: column;
+      padding: 32rpx 38rpx;
+      min-width: 260rpx;
+    }
+
+    &__text {
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 30rpx;
+      line-height: 40rpx;
+      white-space: pre-line;
+      text-align: center;
+      max-width: 480rpx;
+
+      &--capsule {
+        text-align: left;
+      }
+
+      &--loading {
+        text-align: center;
+      }
+    }
+  }
+}
+
+.x-toast__dot {
+  width: 20rpx;
+  height: 20rpx;
+  margin-right: 22rpx;
+  border-radius: 999rpx;
+  flex-shrink: 0;
+}
+</style>

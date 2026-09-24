@@ -1,0 +1,46 @@
+$x-button-active-opacity:0.75 !default;
+$x-button-loading-text-margin-left:4px !default;
+$x-button-text-color: #FFFFFF !default;
+$x-button-text-plain-error-color:$x-error !default;
+$x-button-text-plain-warning-color:$x-warning !default;
+$x-button-text-plain-success-color:$x-success !default;
+$x-button-text-plain-info-color:$x-info !default;
+$x-button-text-plain-primary-color:$x-primary !default;
+.x-button {
+	&--active {
+		opacity: $x-button-active-opacity;
+	}
+	
+	&--active--plain {
+		background-color: rgb(217, 217, 217);
+	}
+	
+	&__loading-text {
+		margin-left:$x-button-loading-text-margin-left;
+	}
+	
+	&__text,
+	&__loading-text {
+		color:$x-button-text-color;
+	}
+	
+	&__text--plain--error {
+		color:$x-button-text-plain-error-color;
+	}
+	
+	&__text--plain--warning {
+		color:$x-button-text-plain-warning-color;
+	}
+	
+	&__text--plain--success{
+		color:$x-button-text-plain-success-color;
+	}
+	
+	&__text--plain--info {
+		color:$x-button-text-plain-info-color;
+	}
+	
+	&__text--plain--primary {
+		color:$x-button-text-plain-primary-color;
+	}
+}
