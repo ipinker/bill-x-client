@@ -1,38 +1,62 @@
 <template>
-  <scroll-view class="home-page" direction="vertical" refresher-enabled :refresher-triggered="refreshing" @refresherrefresh="refresh">
-    <view class="home-content">
-      <view class="home-heading">
-        <view>
-          <text class="welcome-text">你好，{{ accountLabel }}</text>
-          <text class="heading-title">清新记账</text>
+  <view class="home-shell">
+    <scroll-view class="home-page" direction="vertical" refresher-enabled :refresher-triggered="refreshing" @refresherrefresh="refresh">
+      <view class="home-content">
+        <view class="home-heading">
+          <text class="header-spacer"></text>
+          <text class="month-label">{{ monthLabel }}</text>
+          <text class="header-spacer"></text>
         </view>
-        <text class="month-label">{{ monthLabel }}</text>
-      </view>
-      <view class="summary-card">
-        <text class="summary-caption">本月支出</text>
-        <text class="summary-amount">¥ {{ expenseText }}</text>
-        <view class="summary-bottom">
-          <view class="summary-column"><text class="summary-caption">本月收入</text><text class="summary-value">¥ {{ incomeText }}</text></view>
-          <view class="summary-column"><text class="summary-caption">本月结余</text><text class="summary-value">¥ {{ balanceText }}</text></view>
+        <text class="welcome-text">你好，{{ accountLabel }}</text>
+
+        <view class="summary-card">
+          <view class="summary-orb"></view>
+          <text class="summary-caption">本月支出</text>
+          <text class="summary-amount">{{ loading || errorText != '' ? '—' : `¥ ${expenseText}` }}</text>
+          <view class="summary-bottom">
+            <view class="summary-column"><text class="summary-caption">本月收入</text><text class="summary-value">{{ loading || errorText != '' ? '—' : `¥ ${incomeText}` }}</text></view>
+            <view class="summary-column"><text class="summary-caption">本月结余</text><text class="summary-value">{{ loading || errorText != '' ? '—' : `¥ ${balanceText}` }}</text></view>
+          </view>
+        </view>
+
+        <view class="today-card">
+          <view class="today-heading"><text class="today-title">{{ todayLabel }}</text><text class="today-add" @tap="openCreateTodo">＋ 新建</text></view>
+          <text class="today-date">{{ todayDateLabel }}</text>
+          <view class="today-divider"></view>
+          <text v-if="todoLoading" class="today-empty">正在加载待办…</text>
+          <text v-else-if="todoError != ''" class="today-empty">{{ todoError }}</text>
+          <text v-else-if="todos.length == 0" class="today-empty">今天还没有待办，点右上角添加一项。</text>
+          <view v-else v-for="todo in todos" :key="todo.id" class="todo-row" @tap="toggleTodo(todo)">
+            <text :class="todo.completed == true ? 'todo-check todo-done' : 'todo-check'">{{ todo.completed == true ? '✓' : '' }}</text>
+            <view class="todo-copy"><text :class="todo.completed == true ? 'todo-title todo-title-done' : 'todo-title'">{{ todo.title ?? '' }}</text><text class="todo-time">{{ todoTime(todo.dueTime ?? '') }}</text></view>
+          </view>
+        </view>
+
+        <view class="record-card" @tap="openCreateBill">
+          <view class="record-icon"><text class="record-plus">＋</text></view>
+          <view class="record-copy"><text class="record-title">记一笔</text><text class="record-subtitle">快速记录今天的支出或收入</text></view>
+          <text class="record-arrow">›</text>
+        </view>
+
+        <view class="list-heading"><text class="list-title">{{ showingHistory ? '最近账单' : '本月账单' }}</text><text class="list-count">{{ loading || errorText != '' ? '' : `${bills.length} 笔` }}</text></view>
+        <text v-if="showingHistory && !loading && errorText == ''" class="history-hint">本月暂无账单，以下展示以往记录</text>
+        <view v-if="loading" class="state-card"><text class="state-text">正在加载账单…</text></view>
+        <view v-else-if="errorText != ''" class="state-card"><text class="state-text">{{ errorText }}</text><text class="retry-link" @tap="refresh">重新加载</text></view>
+        <view v-else-if="bills.length == 0" class="state-card">
+          <text class="empty-icon">◎</text>
+          <text class="state-title">本月还没有账单</text>
+          <text class="state-text">记下第一笔，收支明细会出现在这里。</text>
+        </view>
+        <view v-else class="bill-card">
+          <view v-for="bill in bills" :key="bill.id" class="bill-row">
+            <view class="bill-icon"><text class="bill-icon-text">{{ bill.isIncome == 1 ? '↗' : '↘' }}</text></view>
+            <view class="bill-meta"><text class="bill-name">{{ bill.name ?? '未命名账单' }}</text><text class="bill-date">{{ bill.dateStr ?? bill.createTime ?? '' }}</text></view>
+            <text :class="bill.isIncome == 1 ? 'bill-income' : 'bill-expense'">{{ bill.isIncome == 1 ? '+' : '-' }}¥{{ formatAmount(bill.amount ?? 0) }}</text>
+          </view>
         </view>
       </view>
-      <view class="list-heading"><text class="list-title">本月账单</text><text class="list-count">{{ bills.length }} 笔</text></view>
-      <view v-if="loading" class="state-card"><text class="state-text">正在加载账单…</text></view>
-      <view v-else-if="errorText != ''" class="state-card"><text class="state-text">{{ errorText }}</text><text class="retry-link" @tap="refresh">重新加载</text></view>
-      <view v-else-if="bills.length == 0" class="state-card">
-        <text class="empty-icon">◎</text>
-        <text class="state-title">本月还没有账单</text>
-        <text class="state-text">记录第一笔后，这里会展示真实的收支明细。</text>
-      </view>
-      <view v-else class="bill-card">
-        <view v-for="bill in bills" :key="bill.id" class="bill-row">
-          <view class="bill-icon"><text class="bill-icon-text">{{ bill.isIncome == 1 ? '↗' : '↘' }}</text></view>
-          <view class="bill-meta"><text class="bill-name">{{ bill.name ?? '未命名账单' }}</text><text class="bill-date">{{ bill.dateStr ?? bill.createTime ?? '' }}</text></view>
-          <text :class="bill.isIncome == 1 ? 'bill-income' : 'bill-expense'">{{ bill.isIncome == 1 ? '+' : '-' }}¥{{ formatAmount(bill.amount ?? 0) }}</text>
-        </view>
-      </view>
-    </view>
-  </scroll-view>
+    </scroll-view>
+  </view>
 </template>
 
 <script setup lang="uts">
@@ -54,13 +78,22 @@ type BillListResponse = {
   data?: Array<BillItem> | null
   msg?: string | null
 }
+type TodoItem = { id?: number; title?: string; dueTime?: string; completed?: boolean }
+type TodoListResponse = { code: number; data?: Array<TodoItem> | null; msg?: string | null }
+type TodoActionResponse = { code: number; msg?: string | null }
 
 const bills = ref<Array<BillItem>>([])
 const loading = ref(false)
 const refreshing = ref(false)
 const errorText = ref('')
+const showingHistory = ref(false)
+const todos = ref<Array<TodoItem>>([])
+const todoLoading = ref(false)
+const todoError = ref('')
 const accountLabel = ref('朋友')
 const monthLabel = ref('')
+const todayLabel = ref('')
+const todayDateLabel = ref('')
 const income = ref(0)
 const expense = ref(0)
 const incomeText = computed((): string => formatAmount(income.value))
@@ -78,25 +111,65 @@ onShow(() => {
 
 function twoDigits(value: number): string { return value < 10 ? `0${value}` : `${value}` }
 function formatAmount(value: number): string { return value.toFixed(2) }
+function openCreateBill(): void { uni.navigateTo({ url: '/src/pages/bill/create' }) }
+function openCreateTodo(): void { uni.navigateTo({ url: '/src/pages/todo/create' }) }
+function todoTime(value: string): string { return value.length >= 16 ? value.substring(11, 16) : '' }
+async function toggleTodo(todo: TodoItem): Promise<void> {
+  if (todo.id == null) return
+  try {
+    const response = await http.Post<TodoActionResponse>('/todo/complete', { id: todo.id, completed: todo.completed != true })
+    if (response.code != 1) throw new Error(response.msg ?? '更新待办失败')
+    await loadTodos()
+  } catch (error) {
+    uni.showToast({ title: error instanceof Error ? error.message : '更新待办失败', icon: 'none' })
+  }
+}
+async function loadTodos(): Promise<void> {
+  todoLoading.value = true
+  todoError.value = ''
+  const now = new Date()
+  const date = `${now.getFullYear()}-${twoDigits(now.getMonth() + 1)}-${twoDigits(now.getDate())}`
+  try {
+    const response = await http.Get<TodoListResponse>(`/todo/list?date=${date}`)
+    if (response.code != 1) throw new Error(response.msg ?? '待办加载失败')
+    todos.value = response.data ?? []
+  } catch (error) {
+    todos.value = []
+    todoError.value = error instanceof Error ? error.message : '待办加载失败'
+  } finally {
+    todoLoading.value = false
+  }
+}
 async function refresh(): Promise<void> {
   if (loading.value) return
   loading.value = true
   refreshing.value = true
   errorText.value = ''
+  showingHistory.value = false
   const now = new Date()
   const year = now.getFullYear()
   const month = now.getMonth() + 1
   const lastDay = new Date(year, month, 0).getDate()
+  const weekdays = ['日', '一', '二', '三', '四', '五', '六']
   monthLabel.value = `${year}年${month}月`
+  todayLabel.value = `今天，周${weekdays[now.getDay()]}`
+  todayDateLabel.value = `${month}月${now.getDate()}日`
   const startTime = `${year}-${twoDigits(month)}-01T00:00:00`
   const endTime = `${year}-${twoDigits(month)}-${twoDigits(lastDay)}T23:59:59`
+  loadTodos()
   try {
     const response = await http.Post<BillListResponse>('/bill/list', { startTime, endTime, page: -1 })
     if (response.code != 1) throw new Error(response.msg ?? '账单加载失败')
     bills.value = response.data ?? []
+    if (bills.value.length == 0) {
+      const history = await http.Post<BillListResponse>('/bill/list', { page: 0, size: 10 })
+      if (history.code != 1) throw new Error(history.msg ?? '历史账单加载失败')
+      bills.value = history.data ?? []
+      showingHistory.value = bills.value.length > 0
+    }
     let nextIncome = 0
     let nextExpense = 0
-    for (const bill of bills.value) {
+    for (const bill of (response.data ?? [])) {
       const amount = bill.amount ?? 0
       if (bill.isIncome == 1) nextIncome += amount
       else nextExpense += amount
@@ -105,6 +178,7 @@ async function refresh(): Promise<void> {
     expense.value = nextExpense
   } catch (error) {
     bills.value = []
+    showingHistory.value = false
     income.value = 0
     expense.value = 0
     errorText.value = error instanceof Error ? error.message : '账单加载失败'
@@ -116,33 +190,57 @@ async function refresh(): Promise<void> {
 </script>
 
 <style>
-.home-page { flex: 1; background-color: #f8f6fc; }
-.home-content { padding: 64px 16px 34px; }
-.home-heading { flex-direction: row; align-items: center; justify-content: space-between; margin-bottom: 22px; }
-.welcome-text { color: #8b849b; font-size: 13px; margin-bottom: 4px; }
-.heading-title { color: #261d42; font-size: 25px; font-weight: 800; }
-.month-label { color: #7050e8; font-size: 12px; font-weight: 700; background-color: #eee8ff; border-radius: 12px; padding: 8px 10px; }
-.summary-card { border-radius: 22px; padding: 22px; background-color: #7050e8; margin-bottom: 28px; }
-.summary-caption { color: #ddd0ff; font-size: 12px; }
-.summary-amount { color: #ffffff; font-size: 36px; font-weight: 800; margin-top: 8px; margin-bottom: 22px; }
+.home-shell { flex: 1; background-image: linear-gradient(to bottom, #ddd3ff, #e9e8ff 42%, #f7f8fa 70%); }
+.home-page { flex: 1; }
+.home-content { padding: 59px 16px 42px; }
+.home-heading { flex-direction: row; align-items: center; justify-content: space-between; margin-bottom: 15px; }
+.header-spacer { width: 44px; }
+.month-label { color: #3f3659; font-size: 14px; font-weight: 700; }
+.welcome-text { color: #6f6484; font-size: 12px; margin-bottom: 12px; }
+.summary-card { position: relative; overflow: hidden; border-radius: 21px; padding: 22px; background-image: linear-gradient(to right, #7650ec, #9772d6); box-shadow: 0 10px 27px rgba(113,77,198,0.22); margin-bottom: 13px; }
+.summary-orb { position: absolute; right: -22px; top: -35px; width: 130px; height: 130px; border-radius: 65px; background-color: rgba(255,255,255,0.10); }
+.summary-caption { color: #e6dcff; font-size: 12px; }
+.summary-amount { color: #ffffff; font-size: 36px; font-weight: 800; margin-top: 7px; margin-bottom: 20px; }
 .summary-bottom { flex-direction: row; }
 .summary-column { flex: 1; }
-.summary-value { color: #ffffff; font-size: 15px; font-weight: 700; margin-top: 5px; }
+.summary-value { color: #ffffff; font-size: 15px; font-weight: 700; margin-top: 4px; }
+.today-card { border-radius: 18px; padding: 17px 18px; background-color: rgba(255,255,255,0.90); margin-bottom: 11px; box-shadow: 0 5px 16px rgba(72,52,126,0.06); }
+.today-title { color: #342a4c; font-size: 16px; font-weight: 700; }
+.today-heading { flex-direction: row; align-items: center; justify-content: space-between; }
+.today-add { color: #7954e2; font-size: 12px; font-weight: 700; }
+.today-date { color: #948ba3; font-size: 11px; margin-top: 4px; }
+.today-divider { height: 1px; background-color: #f1eef5; margin-top: 13px; margin-bottom: 12px; }
+.today-empty { color: #8d849b; font-size: 12px; }
+.todo-row { flex-direction: row; align-items: center; min-height: 43px; }
+.todo-check { width: 20px; height: 20px; border-radius: 10px; border-width: 1px; border-color: #aa9bbd; color: #ffffff; font-size: 12px; text-align: center; margin-right: 10px; }
+.todo-done { background-color: #7954e2; border-color: #7954e2; }
+.todo-copy { flex: 1; flex-direction: row; justify-content: space-between; }
+.todo-title { color: #443952; font-size: 13px; }
+.todo-title-done { color: #aa9fb3; text-decoration-line: line-through; }
+.todo-time { color: #a198ad; font-size: 11px; }
+.record-card { flex-direction: row; align-items: center; border-radius: 18px; padding: 14px 16px; background-color: #ffffff; margin-bottom: 24px; box-shadow: 0 6px 17px rgba(72,52,126,0.08); }
+.record-icon { width: 43px; height: 43px; border-radius: 14px; align-items: center; justify-content: center; background-color: #7954e2; margin-right: 12px; }
+.record-plus { color: #ffffff; font-size: 27px; line-height: 34px; }
+.record-copy { flex: 1; }
+.record-title { color: #302743; font-size: 15px; font-weight: 800; }
+.record-subtitle { color: #968da5; font-size: 11px; margin-top: 4px; }
+.record-arrow { color: #7954e2; font-size: 25px; }
 .list-heading { flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.list-title { color: #261d42; font-size: 17px; font-weight: 800; }
+.list-title { color: #302743; font-size: 17px; font-weight: 800; }
 .list-count { color: #8b849b; font-size: 12px; }
-.state-card { padding: 42px 20px; align-items: center; background-color: #ffffff; border-radius: 18px; }
-.state-title { color: #261d42; font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+.history-hint { color: #90869f; font-size: 11px; margin-bottom: 10px; }
+.state-card { padding: 37px 20px; align-items: center; background-color: #ffffff; border-radius: 18px; }
+.state-title { color: #302743; font-size: 16px; font-weight: 700; margin-bottom: 8px; }
 .state-text { color: #8b849b; font-size: 13px; text-align: center; line-height: 20px; }
-.empty-icon { color: #a78bfa; font-size: 40px; margin-bottom: 12px; }
+.empty-icon { color: #a78bfa; font-size: 37px; margin-bottom: 11px; }
 .retry-link { color: #7050e8; font-size: 13px; font-weight: 700; margin-top: 14px; }
 .bill-card { border-radius: 18px; background-color: #ffffff; padding: 0 16px; }
 .bill-row { min-height: 68px; flex-direction: row; align-items: center; border-bottom-width: 1px; border-bottom-color: #f1edf6; }
 .bill-icon { width: 38px; height: 38px; border-radius: 12px; background-color: #eee8ff; align-items: center; justify-content: center; margin-right: 12px; }
 .bill-icon-text { color: #7050e8; font-size: 20px; font-weight: 700; }
 .bill-meta { flex: 1; }
-.bill-name { color: #261d42; font-size: 14px; font-weight: 700; }
+.bill-name { color: #302743; font-size: 14px; font-weight: 700; }
 .bill-date { color: #9b95a9; font-size: 11px; margin-top: 3px; }
 .bill-income { color: #2fae80; font-size: 14px; font-weight: 700; }
-.bill-expense { color: #261d42; font-size: 14px; font-weight: 700; }
+.bill-expense { color: #302743; font-size: 14px; font-weight: 700; }
 </style>

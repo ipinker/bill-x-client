@@ -1,40 +1,65 @@
 <template>
-  <scroll-view class="auth-page" direction="vertical">
-    <view class="auth-content">
-      <view class="brand-mark"><text class="brand-letter">L</text></view>
-      <text class="brand-title">清新记账</text>
-      <text class="brand-subtitle">智能记账 · 看见生活的每一笔</text>
-
-      <view class="form-card">
-        <text class="form-title">欢迎回来</text>
-        <text class="form-intro">使用邮箱登录，继续你的记账旅程</text>
-
-        <view class="mode-row">
-          <text :class="mode == 0 ? 'mode-active' : 'mode-idle'" @tap="setMode(0)">密码登录</text>
-          <text :class="mode == 1 ? 'mode-active' : 'mode-idle'" @tap="setMode(1)">验证码登录</text>
-        </view>
-        <view v-if="mode == 1" class="channel-row">
-          <text :class="isPhone ? 'channel-idle' : 'channel-active'" @tap="setPhone(false)">邮箱</text>
-          <text :class="isPhone ? 'channel-active' : 'channel-idle'" @tap="setPhone(true)">手机号</text>
+  <view class="auth-shell">
+    <image class="auth-background" src="/static/images/auth-mist.png" mode="aspectFill" />
+    <scroll-view class="auth-page" direction="vertical">
+      <view class="auth-content">
+        <view class="brand-row">
+          <image class="brand-mark" src="/static/images/auth-logo.png" mode="aspectFit" />
+          <view class="brand-copy">
+            <image class="brand-title" src="/static/images/auth-title.png" mode="aspectFit" />
+            <text class="brand-subtitle">让每一笔生活，都有回响</text>
+          </view>
         </view>
 
-        <text class="field-label">{{ isPhone ? '手机号码' : '邮箱地址' }}</text>
-        <input v-model="account" class="field-input" :type="isPhone ? 'number' : 'text'" :placeholder="isPhone ? '请输入手机号' : '请输入邮箱地址'" />
-        <text class="field-label">{{ mode == 0 ? '密码' : '验证码' }}</text>
-        <view class="code-row">
-          <input v-if="mode == 0" v-model="password" class="field-input field-flex" type="password" placeholder="请输入密码" />
-          <input v-else v-model="code" class="field-input field-flex" type="number" placeholder="请输入验证码" />
-          <text v-if="mode == 1" class="send-code" @tap="sendCode">{{ countdown > 0 ? `${countdown}s` : '获取验证码' }}</text>
+        <view class="welcome-block">
+          <text class="welcome-eyebrow">WELCOME BACK</text>
+          <text class="welcome-title">好久不见，</text>
+          <text class="welcome-title">继续记录你的日常。</text>
         </view>
-        <text v-if="errorText != ''" class="error-text">{{ errorText }}</text>
-        <button class="primary-button" :disabled="busy" @tap="submit">{{ busy ? '登录中…' : '登录' }}</button>
-        <view class="register-row">
-          <text class="muted-text">还没有账户？</text>
-          <text class="link-text" @tap="openRegister">立即注册</text>
+
+        <view class="form-card">
+          <view class="form-heading">
+            <view class="form-heading-copy">
+              <text class="form-title">{{ mode == 0 ? '邮箱密码登录' : '验证码登录' }}</text>
+              <text class="form-intro">{{ mode == 0 ? '从这里，接着写你的生活账本' : '新用户验证后自动创建账户' }}</text>
+            </view>
+            <text class="mode-switch" @tap="setMode(mode == 0 ? 1 : 0)">{{ mode == 0 ? '验证码登录 ›' : '密码登录 ›' }}</text>
+          </view>
+
+          <view v-if="mode == 1" class="channel-row">
+            <view class="channel-indicator" :style="isPhone ? 'transform: translateX(104px)' : 'transform: translateX(0px)'" />
+            <text :class="isPhone ? 'channel-label channel-idle' : 'channel-label channel-active'" @tap="setPhone(false)">✉ 邮箱</text>
+            <text :class="isPhone ? 'channel-label channel-active' : 'channel-label channel-idle'" @tap="setPhone(true)">✆ 手机号</text>
+          </view>
+
+          <text class="field-label">{{ isPhone ? '手机号码' : '邮箱地址' }}</text>
+          <input v-model="account" class="field-input" :type="isPhone ? 'number' : 'text'" :placeholder="isPhone ? '请输入手机号' : '请输入邮箱地址'" />
+          <text class="field-label">{{ mode == 0 ? '登录密码' : '验证码' }}</text>
+          <view class="code-row">
+            <input v-if="mode == 0" v-model="password" class="field-input field-flex" type="password" placeholder="请输入密码" />
+            <input v-else v-model="code" class="field-input field-flex" type="number" placeholder="请输入 6 位验证码" />
+            <text v-if="mode == 1" class="send-code" @tap="sendCode">{{ countdown > 0 ? `${countdown}s` : '获取验证码' }}</text>
+          </view>
+          <text v-if="errorText != ''" class="error-text">{{ errorText }}</text>
+          <button class="primary-button" :disabled="busy" @tap="submit">{{ busy ? '请稍候…' : mode == 0 ? '登录' : '注册并登录' }}</button>
+          <view v-if="mode == 0" class="register-row">
+            <text class="muted-text">想设置密码，或创建新账户？</text>
+            <text class="link-text" @tap="openRegister">去注册</text>
+          </view>
         </view>
+        <view class="agreement-row">
+          <view :class="agreed ? 'agree-check agree-checked' : 'agree-check'" @tap="agreed = !agreed">
+            <text v-if="agreed" class="agree-tick">✓</text>
+          </view>
+          <text class="agree-copy" @tap="agreed = !agreed">我已阅读并同意</text>
+          <text class="agree-link" @tap="openAgreement">《用户协议》</text>
+          <text class="agree-copy">与</text>
+          <text class="agree-link" @tap="openAgreement">《隐私协议》</text>
+        </view>
+        <text class="footer-note">好好生活，慢慢记账。</text>
       </view>
-    </view>
-  </scroll-view>
+    </scroll-view>
+  </view>
 </template>
 
 <script setup lang="uts">
@@ -50,6 +75,7 @@ const password = ref('')
 const code = ref('')
 const errorText = ref('')
 const busy = ref(false)
+const agreed = ref(false)
 const countdown = ref(0)
 let countdownTimer: number = -1
 
@@ -104,6 +130,10 @@ async function sendCode(): Promise<void> {
 }
 async function submit(): Promise<void> {
   if (busy.value) return
+  if (!agreed.value) {
+    errorText.value = '请先阅读并同意用户协议与隐私协议'
+    return
+  }
   if (!validAccount()) {
     errorText.value = isPhone.value ? '请输入正确的手机号' : '请输入正确的邮箱地址'
     return
@@ -131,32 +161,50 @@ async function submit(): Promise<void> {
 function openRegister(): void {
   uni.navigateTo({ url: '/src/pages/auth/register' })
 }
+function openAgreement(): void {
+  uni.navigateTo({ url: '/src/pages/auth/agreement' })
+}
 </script>
 
 <style>
-.auth-page { flex: 1; background-color: #7350df; }
-.auth-content { padding: 80px 24px 40px; align-items: center; }
-.brand-mark { width: 78px; height: 78px; border-radius: 24px; background-color: #a78bfa; align-items: center; justify-content: center; margin-bottom: 16px; }
-.brand-letter { font-size: 48px; font-weight: 800; color: #ffffff; }
-.brand-title { color: #ffffff; font-size: 27px; font-weight: 800; }
-.brand-subtitle { color: #e5d9ff; font-size: 13px; margin-top: 7px; margin-bottom: 36px; }
-.form-card { width: 100%; padding: 24px; background-color: #ffffff; border-radius: 24px; }
-.form-title { color: #261d42; font-size: 23px; font-weight: 800; }
-.form-intro { color: #8b849b; font-size: 13px; margin-top: 6px; }
-.mode-row { flex-direction: row; margin-top: 28px; margin-bottom: 18px; border-bottom-width: 1px; border-bottom-color: #ece8f6; }
-.mode-active { color: #7050e8; font-size: 15px; font-weight: 700; padding: 0 12px 12px; border-bottom-width: 2px; border-bottom-color: #7050e8; }
-.mode-idle { color: #8b849b; font-size: 15px; padding: 0 12px 12px; }
-.channel-row { flex-direction: row; margin-bottom: 16px; }
-.channel-active { color: #7050e8; font-size: 13px; font-weight: 700; margin-right: 18px; }
-.channel-idle { color: #8b849b; font-size: 13px; margin-right: 18px; }
-.field-label { color: #524968; font-size: 13px; font-weight: 600; margin-bottom: 7px; margin-top: 12px; }
-.field-input { height: 50px; background-color: #f7f5fc; border-radius: 12px; padding: 0 14px; color: #261d42; font-size: 15px; }
+.auth-shell { flex: 1; background-color: #ece8ff; }
+.auth-background { position: absolute; width: 100%; height: 100%; }
+.auth-page { flex: 1; }
+.auth-content { padding: 76px 24px 38px; }
+.brand-row { flex-direction: row; align-items: center; }
+.brand-mark { width: 48px; height: 48px; margin-right: 12px; }
+.brand-copy { justify-content: center; }
+.brand-title { width: 98px; height: 26px; }
+.brand-subtitle { color: #6e628a; font-size: 11px; margin-top: 3px; }
+.welcome-block { margin-top: 55px; margin-bottom: 22px; }
+.welcome-eyebrow { color: #7250bd; font-size: 11px; font-weight: 700; letter-spacing: 2px; margin-bottom: 13px; }
+.welcome-title { color: #281a49; font-size: 28px; font-weight: 800; line-height: 37px; }
+.form-card { width: 100%; padding: 21px 20px 18px; background-image: linear-gradient(to bottom, rgba(255,255,255,0.86), rgba(255,255,255,0.61)); border-radius: 24px; border-width: 1px; border-color: rgba(255,255,255,0.95); box-shadow: 0 14px 36px rgba(80,54,139,0.15); }
+.form-heading { flex-direction: row; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
+.form-heading-copy { flex: 1; }
+.form-title { color: #2e2247; font-size: 17px; font-weight: 700; }
+.form-intro { color: #827795; font-size: 12px; margin-top: 6px; }
+.mode-switch { color: #7050ce; font-size: 12px; font-weight: 600; margin-left: 8px; margin-top: 4px; }
+.channel-row { position: relative; flex-direction: row; width: 214px; height: 35px; padding: 3px; border-radius: 11px; background-color: rgba(231,224,249,0.72); margin-bottom: 9px; }
+.channel-indicator { position: absolute; left: 3px; top: 3px; width: 104px; height: 29px; border-radius: 8px; background-color: #ffffff; box-shadow: 0 2px 8px rgba(90,65,150,0.14); transition-property: transform; transition-duration: 0.22s; }
+.channel-label { width: 104px; height: 29px; line-height: 29px; text-align: center; font-size: 12px; font-weight: 600; transition-property: color; transition-duration: 0.22s; }
+.channel-active { color: #6845c6; }
+.channel-idle { color: #8d829f; }
+.field-label { color: #51446c; font-size: 13px; font-weight: 600; margin-bottom: 7px; margin-top: 10px; }
+.field-input { height: 45px; background-color: rgba(247,245,251,0.85); border-radius: 12px; padding: 0 14px; color: #281a49; font-size: 15px; }
 .field-flex { flex: 1; }
 .code-row { flex-direction: row; align-items: center; }
-.send-code { color: #7050e8; font-size: 13px; font-weight: 700; margin-left: 12px; }
-.error-text { color: #db4764; font-size: 12px; margin-top: 12px; }
-.primary-button { margin-top: 26px; width: 100%; height: 50px; line-height: 50px; border-radius: 14px; background-color: #7050e8; color: #ffffff; font-size: 16px; font-weight: 700; }
-.register-row { flex-direction: row; justify-content: center; margin-top: 22px; }
-.muted-text { color: #8b849b; font-size: 13px; }
-.link-text { color: #7050e8; font-size: 13px; font-weight: 700; }
+.send-code { color: #6947c7; font-size: 12px; font-weight: 600; margin-left: 10px; }
+.error-text { color: #d4476b; font-size: 12px; margin-top: 10px; }
+.primary-button { margin-top: 19px; width: 100%; height: 46px; line-height: 46px; border-radius: 13px; background-color: #6e4bd2; color: #ffffff; font-size: 16px; font-weight: 700; }
+.register-row { flex-direction: row; justify-content: center; margin-top: 15px; }
+.muted-text { color: #857b98; font-size: 12px; }
+.link-text { color: #6844c5; font-size: 12px; font-weight: 600; margin-left: 4px; }
+.agreement-row { flex-direction: row; align-items: center; justify-content: center; margin-top: 24px; }
+.agree-check { width: 17px; height: 17px; border-radius: 5px; border-width: 1px; border-color: #947acb; background-color: rgba(255,255,255,0.55); margin-right: 6px; align-items: center; justify-content: center; }
+.agree-checked { background-color: #7452cc; border-color: #7452cc; }
+.agree-tick { color: #ffffff; font-size: 12px; font-weight: 800; }
+.agree-copy { color: #6e6483; font-size: 10px; }
+.agree-link { color: #6743c3; font-size: 10px; font-weight: 700; }
+.footer-note { color: #87799c; font-size: 11px; text-align: center; margin-top: 21px; }
 </style>

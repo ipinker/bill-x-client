@@ -9,6 +9,18 @@
       "style": { "navigationStyle": "custom", "navigationBarTitleText": "注册" }
     },
     {
+      "path": "src/pages/auth/agreement",
+      "style": { "navigationBarTitleText": "用户协议与隐私协议" }
+    },
+    {
+      "path": "src/pages/bill/create",
+      "style": { "navigationBarTitleText": "记一笔" }
+    },
+    {
+      "path": "src/pages/todo/create",
+      "style": { "navigationBarTitleText": "新建待办" }
+    },
+    {
       "path": "src/pages/home/index",
       "style": {
         "navigationStyle": "custom",

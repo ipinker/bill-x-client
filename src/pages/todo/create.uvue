@@ -1,0 +1,66 @@
+<template>
+  <scroll-view class="todo-page" direction="vertical">
+    <view class="todo-content">
+      <text class="eyebrow">安排好今天</text>
+      <text class="heading">新建待办</text>
+      <view class="form-card">
+        <text class="field-label">待办事项</text>
+        <input v-model="title" class="field-input" type="text" maxlength="120" placeholder="例如：整理本月账单" />
+        <text class="field-label secondary-label">完成时间</text>
+        <picker mode="time" :value="time" @change="onTimeChange"><view class="time-picker">{{ time }}<text class="picker-arrow">⌄</text></view></picker>
+        <text class="field-label secondary-label">备注（选填）</text>
+        <input v-model="note" class="field-input" type="text" maxlength="500" placeholder="补充一点细节" />
+      </view>
+      <text v-if="errorText != ''" class="error-text">{{ errorText }}</text>
+      <button class="save-button" :disabled="saving" @tap="submit">{{ saving ? '保存中…' : '保存待办' }}</button>
+    </view>
+  </scroll-view>
+</template>
+
+<script setup lang="uts">
+import { ref } from 'vue'
+import { http } from '../../http'
+
+type ApiResponse = { code: number; msg?: string | null }
+const title = ref('')
+const note = ref('')
+const time = ref('09:00')
+const saving = ref(false)
+const errorText = ref('')
+function twoDigits(value: number): string { return value < 10 ? `0${value}` : `${value}` }
+function onTimeChange(event: UniPickerChangeEvent): void { time.value = event.detail.value as string }
+async function submit(): Promise<void> {
+  const value = title.value.trim()
+  if (value == '') { errorText.value = '请输入待办事项'; return }
+  if (saving.value) return
+  const now = new Date()
+  const date = `${now.getFullYear()}-${twoDigits(now.getMonth() + 1)}-${twoDigits(now.getDate())}`
+  saving.value = true
+  errorText.value = ''
+  try {
+    const response = await http.Post<ApiResponse>('/todo/add', { title: value, note: note.value.trim(), dueTime: `${date}T${time.value}:00` })
+    if (response.code != 1) throw new Error(response.msg ?? '待办保存失败')
+    uni.showToast({ title: '待办已添加', icon: 'none' })
+    uni.navigateBack()
+  } catch (error) {
+    errorText.value = error instanceof Error ? error.message : '待办保存失败'
+  } finally {
+    saving.value = false
+  }
+}
+</script>
+
+<style>
+.todo-page { flex: 1; background-image: linear-gradient(to bottom, #e0d5ff, #f0ecfb 45%, #f7f8fa 75%); }
+.todo-content { padding: 37px 17px 35px; }
+.eyebrow { color: #776b8e; font-size: 12px; margin-bottom: 7px; }
+.heading { color: #312743; font-size: 25px; font-weight: 800; margin-bottom: 23px; }
+.form-card { padding: 22px 19px; border-radius: 20px; background-color: rgba(255,255,255,0.84); }
+.field-label { color: #4a4058; font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+.secondary-label { margin-top: 23px; }
+.field-input { height: 43px; border-bottom-width: 1px; border-bottom-color: #e9e4ef; color: #302743; font-size: 14px; }
+.time-picker { height: 43px; border-bottom-width: 1px; border-bottom-color: #e9e4ef; flex-direction: row; justify-content: space-between; align-items: center; color: #302743; font-size: 14px; }
+.picker-arrow { color: #9688a8; font-size: 19px; }
+.error-text { color: #c74861; font-size: 12px; margin-top: 13px; }
+.save-button { height: 49px; line-height: 49px; margin-top: 23px; border-radius: 14px; background-color: #7954e2; color: #ffffff; font-size: 15px; font-weight: 700; }
+</style>

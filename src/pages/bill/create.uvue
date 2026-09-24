@@ -1,0 +1,189 @@
+<template>
+  <scroll-view class="entry-page" direction="vertical">
+    <view class="entry-content">
+      <view class="type-switch">
+        <text :class="isIncome ? 'type-label' : 'type-label type-active'" @tap="setIncome(false)">支出</text>
+        <text :class="isIncome ? 'type-label type-active' : 'type-label'" @tap="setIncome(true)">收入</text>
+      </view>
+
+      <view class="amount-card">
+        <text class="amount-caption">{{ isIncome ? '收入金额' : '支出金额' }}</text>
+        <view class="amount-row"><text class="currency">¥</text><input v-model="amountText" class="amount-input" type="digit" placeholder="0.00" /></view>
+      </view>
+
+      <view class="entry-card">
+        <text class="section-title">分类</text>
+        <text v-if="loadingCategories" class="helper-text">正在读取分类…</text>
+        <view v-else-if="activeCategories.length > 0" class="category-list">
+          <view v-for="category in activeCategories" :key="category.id" :class="selectedCategoryId == category.id ? 'category-chip category-selected' : 'category-chip'" @tap="selectCategory(category.id ?? 0)">
+            <text :class="selectedCategoryId == category.id ? 'category-name category-name-selected' : 'category-name'">{{ category.label ?? '未命名分类' }}</text>
+          </view>
+        </view>
+        <view v-else class="category-empty">
+          <text class="helper-text">还没有{{ isIncome ? '收入' : '支出' }}分类，创建一个即可开始记账。</text>
+          <view class="create-category-row">
+            <input v-model="newCategoryName" class="category-input" type="text" placeholder="例如：餐饮" />
+            <text class="create-category-button" @tap="createCategory">创建分类</text>
+          </view>
+        </view>
+
+        <text class="section-title field-title">账单名称（选填）</text>
+        <input v-model="billName" class="field-input" type="text" placeholder="默认使用分类名称" />
+        <text class="section-title field-title">备注（选填）</text>
+        <input v-model="remark" class="field-input" type="text" placeholder="补充这笔账单的信息" />
+      </view>
+
+      <text v-if="errorText != ''" class="error-text">{{ errorText }}</text>
+      <button class="save-button" :disabled="saving" @tap="submit">{{ saving ? '保存中…' : '保存账单' }}</button>
+      <text class="entry-footnote">金额与分类会写入你的账本，保存后返回首页。</text>
+    </view>
+  </scroll-view>
+</template>
+
+<script setup lang="uts">
+import { onShow } from '@dcloudio/uni-app'
+import { computed, ref } from 'vue'
+import { http } from '../../http'
+import { getAuthToken } from '../../auth/session'
+
+type ApiResponse<T> = { code: number; data?: T | null; msg?: string | null }
+type BillCategory = { id?: number; label?: string; isIncome?: number; isShow?: number }
+
+const isIncome = ref(false)
+const amountText = ref('')
+const billName = ref('')
+const remark = ref('')
+const newCategoryName = ref('')
+const categories = ref<Array<BillCategory>>([])
+const selectedCategoryId = ref(0)
+const loadingCategories = ref(false)
+const saving = ref(false)
+const errorText = ref('')
+const activeCategories = computed((): Array<BillCategory> => {
+  return categories.value.filter((item: BillCategory): boolean => item.isIncome == (isIncome.value ? 1 : 0) && item.isShow != 0)
+})
+
+onShow(() => {
+  if (getAuthToken() == '') {
+    uni.reLaunch({ url: '/src/pages/auth/login' })
+    return
+  }
+  loadCategories()
+})
+
+function setIncome(next: boolean): void {
+  isIncome.value = next
+  selectedCategoryId.value = 0
+  errorText.value = ''
+}
+function selectCategory(id: number): void {
+  selectedCategoryId.value = id
+  errorText.value = ''
+}
+async function loadCategories(): Promise<void> {
+  loadingCategories.value = true
+  try {
+    const response = await http.Get<ApiResponse<Array<BillCategory>>>('/bill/type/list')
+    if (response.code != 1) throw new Error(response.msg ?? '分类加载失败')
+    categories.value = response.data ?? []
+  } catch (error) {
+    errorText.value = error instanceof Error ? error.message : '分类加载失败'
+  } finally {
+    loadingCategories.value = false
+  }
+}
+async function createCategory(): Promise<void> {
+  const label = newCategoryName.value.trim()
+  if (saving.value || label == '') {
+    errorText.value = '请输入分类名称'
+    return
+  }
+  saving.value = true
+  errorText.value = ''
+  try {
+    const response = await http.Post<ApiResponse<boolean>>('/bill/type/add', { label, isIncome: isIncome.value ? 1 : 0, isShow: 1, pid: 0 })
+    if (response.code != 1) throw new Error(response.msg ?? '分类创建失败')
+    newCategoryName.value = ''
+    await loadCategories()
+    for (const category of activeCategories.value) {
+      if (category.label == label) selectedCategoryId.value = category.id ?? 0
+    }
+  } catch (error) {
+    errorText.value = error instanceof Error ? error.message : '分类创建失败'
+  } finally {
+    saving.value = false
+  }
+}
+function twoDigits(value: number): string { return value < 10 ? `0${value}` : `${value}` }
+async function submit(): Promise<void> {
+  if (saving.value) return
+  const amountValue = amountText.value.trim()
+  if (!/^\d+(\.\d{1,2})?$/.test(amountValue) || parseFloat(amountValue) <= 0) {
+    errorText.value = '请输入大于 0 的金额，最多保留两位小数'
+    return
+  }
+  if (selectedCategoryId.value <= 0) {
+    errorText.value = '请先选择分类'
+    return
+  }
+  let categoryLabel = ''
+  for (const category of activeCategories.value) {
+    if (category.id == selectedCategoryId.value) categoryLabel = category.label ?? ''
+  }
+  const now = new Date()
+  const date = `${now.getFullYear()}-${twoDigits(now.getMonth() + 1)}-${twoDigits(now.getDate())}`
+  const time = `${twoDigits(now.getHours())}:${twoDigits(now.getMinutes())}:${twoDigits(now.getSeconds())}`
+  saving.value = true
+  errorText.value = ''
+  try {
+    const response = await http.Post<ApiResponse<any>>('/bill/add', {
+      name: billName.value.trim() == '' ? categoryLabel : billName.value.trim(),
+      amount: parseFloat(amountValue),
+      isIncome: isIncome.value ? 1 : 0,
+      billTypeId: selectedCategoryId.value,
+      methodId: 0,
+      ledgerId: 0,
+      dateStr: date.replace(/-/g, '/'),
+      spendTime: `${date}T${time}`,
+      remark: remark.value.trim(),
+    })
+    if (response.code != 1) throw new Error(response.msg ?? '账单保存失败')
+    uni.showToast({ title: '已记下这一笔', icon: 'none' })
+    uni.navigateBack()
+  } catch (error) {
+    errorText.value = error instanceof Error ? error.message : '账单保存失败'
+  } finally {
+    saving.value = false
+  }
+}
+</script>
+
+<style>
+.entry-page { flex: 1; background-color: #f7f6fb; }
+.entry-content { padding: 18px 18px 38px; }
+.type-switch { flex-direction: row; padding: 4px; background-color: #ece7fb; border-radius: 18px; margin-bottom: 15px; }
+.type-label { flex: 1; height: 38px; line-height: 38px; text-align: center; color: #837997; font-size: 14px; font-weight: 600; border-radius: 14px; }
+.type-active { color: #6d4bc9; background-color: #ffffff; }
+.amount-card { padding: 19px 22px; background-color: #ffffff; border-radius: 20px; margin-bottom: 13px; }
+.amount-caption { color: #8e849e; font-size: 12px; }
+.amount-row { flex-direction: row; align-items: center; margin-top: 7px; }
+.currency { color: #6845c4; font-size: 28px; font-weight: 700; margin-right: 6px; }
+.amount-input { flex: 1; height: 55px; color: #2b2044; font-size: 37px; font-weight: 700; }
+.entry-card { padding: 20px; background-color: #ffffff; border-radius: 20px; }
+.section-title { color: #342b47; font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+.category-list { flex-direction: row; flex-wrap: wrap; }
+.category-chip { padding: 9px 13px; background-color: #f5f2fb; border-radius: 12px; margin-right: 7px; margin-bottom: 8px; border-width: 1px; border-color: #f5f2fb; }
+.category-selected { background-color: #f0eaff; border-color: #8d6fe1; }
+.category-name { color: #625971; font-size: 12px; }
+.category-name-selected { color: #6642c4; font-weight: 700; }
+.category-empty { margin-bottom: 10px; }
+.helper-text { color: #91879f; font-size: 12px; line-height: 19px; }
+.create-category-row { flex-direction: row; align-items: center; margin-top: 10px; }
+.category-input { flex: 1; height: 42px; background-color: #f7f5fb; border-radius: 10px; padding: 0 12px; font-size: 13px; }
+.create-category-button { color: #6c49c9; font-size: 12px; font-weight: 700; margin-left: 12px; }
+.field-title { margin-top: 17px; }
+.field-input { height: 43px; background-color: #f7f5fb; border-radius: 11px; padding: 0 13px; color: #342b47; font-size: 14px; }
+.error-text { color: #d44869; font-size: 12px; margin-top: 13px; }
+.save-button { width: 100%; height: 48px; line-height: 48px; margin-top: 21px; background-color: #704dd3; border-radius: 14px; color: #ffffff; font-size: 16px; font-weight: 700; }
+.entry-footnote { color: #a098ad; font-size: 11px; text-align: center; margin-top: 14px; }
+</style>

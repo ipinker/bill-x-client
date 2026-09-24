@@ -1,0 +1,24 @@
+<template>
+  <scroll-view class="agreement-page" direction="vertical">
+    <view class="agreement-content">
+      <view class="preview-note">
+        <text class="preview-title">开发预览文档</text>
+        <text class="preview-copy">用户协议入口暂时共用旧版隐私协议；正式上线前须替换并复核正文。</text>
+      </view>
+      <rich-text class="agreement-text" :nodes="privacyContent" mode="native" :selectable="true" />
+    </view>
+  </scroll-view>
+</template>
+
+<script setup lang="uts">
+import { privacyContent } from '../../auth/privacy-content'
+</script>
+
+<style>
+.agreement-page { flex: 1; background-color: #fbfaff; }
+.agreement-content { padding: 22px 19px 35px; }
+.preview-note { background-color: #f0eaff; border-radius: 13px; padding: 15px; margin-bottom: 20px; }
+.preview-title { color: #6545bc; font-size: 14px; font-weight: 800; margin-bottom: 6px; }
+.preview-copy { color: #685a85; font-size: 12px; line-height: 18px; }
+.agreement-text { color: #302b3d; font-size: 14px; line-height: 22px; }
+</style>
